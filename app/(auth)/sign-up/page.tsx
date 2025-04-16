@@ -51,6 +51,8 @@ const SignIn = () => {
         return;
       }
       if (!dberror) {
+        localStorage.setItem("userId", data.user.id);
+        console.log("User signed up successfully:", data.user.id);
         window.location.href = '/';
       }
     }

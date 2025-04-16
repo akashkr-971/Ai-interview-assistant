@@ -13,7 +13,9 @@ const Hero = () => {
             <p className="text-gray-600 dark:text-gray-300">
               Easily create an AI Interview Helper with this online tool.
             </p>
-            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
+            <button onClick={()=>{
+              window.location.href="/create-interview"
+            }} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
               Create an interview
             </button>
           </div>
