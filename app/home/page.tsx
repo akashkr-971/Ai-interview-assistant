@@ -1,31 +1,61 @@
+'use client'
+
 import React from 'react'
+import { useEffect, useState } from 'react'
 import Navbar from '../components/navbar'
 import Footer from '../components/footer'
-import Image from 'next/image'
+import Hero from '../components/hero'
+import InterviewCard from '../components/interviewcard'
 
 const Home = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+    
+    useEffect(() => {
+      const userId = localStorage.getItem("userId");
+      if (userId) {
+        setIsLoggedIn(true);
+      }
+    }, []);
   return (
     <>
       <Navbar />
-      <section className="bg-gray-400 dark:bg-gray-900 p-3 m-3 rounded-lg ">
-        <div className="container mx-auto p-6 flex flex-col flex-row items-center justify-center">
-          <div className="w-full lg:w-1/2">
-            <h2 className="text-3xl font-bold leading-tight mb-2 dark:text-white">
-              Create an AI Interview Helper
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              Easily create an AI Interview Helper with this online tool.
-            </p>
-            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
-              Create an interview
-            </button>
-          </div>
-          <div className="lg:block w-1/2">
-            <Image src="/robot.png" alt="Robot" width={500} height={200} />
-          </div>
-        </div>
-      </section>
+      <Hero />
+      <section
+        id="interviews"
+        className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-4 rounded-xl shadow-md"
+      >
+        <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center">
+          🎤 Past Interviews
+        </h2>
 
+        {isLoggedIn ? (
+          <InterviewCard />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10">
+            <p className="text-gray-600 dark:text-gray-300 text-lg mb-4">
+              Please <span className="font-semibold text-blue-600 dark:text-blue-400">log in</span> to view your interviews.
+            </p>
+            <a
+              href="/log-in"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-6 py-2 rounded-full transition duration-200"
+            >
+              Log In
+            </a>
+            <p className="text-sm mt-4 text-gray-500 dark:text-gray-400">
+              Don’t have an account?{" "}
+              <a href="/sign-up" className="text-blue-500 hover:underline">
+                Sign up here
+              </a>
+            </p>
+          </div>
+        )}
+      </section>
+      {isLoggedIn ? (
+          <section id="interviews" className="bg-gray-200 dark:bg-gray-800 p-6 m-3 rounded-lg grid gap-2">
+              <h2 className="text-2xl font-bold mb-4 dark:text-white">Pick your Interviews</h2>
+              <InterviewCard />
+          </section>
+      ): ""}
       <Footer />
     </>
   )

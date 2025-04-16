@@ -1,4 +1,5 @@
 'use client'
+
 import React, { useState } from 'react'
 import Link from "next/link";
 import InputField from '../../components/InputField'
@@ -18,6 +19,7 @@ const LogIn = () => {
         [e.target.name]: e.target.value
       })
     }
+
   const handlesubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault()
       const {data,error} = await supabase.auth.signInWithPassword({
@@ -29,6 +31,11 @@ const LogIn = () => {
         console.error("Login Error:", error.message);
       } else {
         console.log("Login Successful:", data);
+        const userId = data.user?.id;
+        console.log("User ID:", userId);
+        if (userId) {
+          localStorage.setItem("userId", userId);
+        }
         window.location.href = "/";
       }
     }
@@ -49,6 +56,7 @@ const LogIn = () => {
                             name='email'
                             value={formData.email}
                             onChange={handleChange}
+                            autoComplete="current-password"
                         />
                         <InputField 
                             label="Password"
@@ -57,6 +65,7 @@ const LogIn = () => {
                             name='password'
                             value={formData.password}
                             onChange={handleChange}
+                            autoComplete="current-password"
                         />
                         <div className='flex flex-col space-y-4 '>
                             <Button text="Log In"/>
