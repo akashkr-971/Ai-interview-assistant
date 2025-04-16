@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from "next/link";
 import InputField from '../../components/InputField'
 import Button from '../../components/button'
-import AuthLayout from '../../components/authlayout'
+import AuthLayout from '../authlayout'
 import { supabase } from "@/lib/supabaseClient";
 
 const SignIn = () => {
