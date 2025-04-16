@@ -34,7 +34,7 @@ const navbar = () => {
             <li><Link href="/about">About</Link></li> 
             {isLoggedIn ? 
             <li className="flex items-center space-x-2"><Link href="/profile">Profile</Link>  
-              <button onClick={() => alert("Clicked")} className='w-30'>
+              <button onClick={()=>{window.location.href="https://rzp.io/rzp/NRvJyqE"}} className='w-30'>
                 <div className="bg-orange-500 rounded-full p-1 flex align-center justify-center text-white font-bold text-sm w-30">
                   <Image src="/coin.svg" alt="Coin" width={20} height={20} className='mr-2'></Image>
                   <span>5 Coins</span>

@@ -28,28 +28,27 @@ const CreateInterview = () => {
 
   return (
     <>
+      <div className="min-h-screen bg-gray-900 text-white align-center justify-center">
       <Navbar />
-
-      <div className="min-h-screen bg-gray-900 text-white px-6 py-10">
-        <div className="max-w-4xl mx-auto bg-gray-800 rounded-2xl p-8 shadow-lg">
+        <div className="max-w-4xl bg-gray-800 rounded-2xl p-8 shadow-lg m-10 mx-auto">
           <div className="flex justify-between items-center mb-6">
-            <span className="text-blue-400 font-medium">Create your Interview by answering the questions</span>
+            <span className="text-blue-400 font-medium text-lg">Create your Interview by answering the questions</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
             {/* AI Interviewer Card */}
-            <div className="bg-gray-700 rounded-xl p-6 flex flex-col items-center justify-center text-center">
+            <div className={`bg-gray-700 rounded-xl p-6 flex flex-col items-center justify-center text-center h-100 ${talking === 'ai' ? 'border-4 border-white-400 ' : ''}`}>
               <Image 
                 src="/logo.webp" 
                 alt="AI Interviewer" 
                 width={80} 
                 height={80} 
-                className={`rounded-full ${talking === 'ai' ? 'animate-pulse-ring' : ''}`} />
+                className={`rounded-full ${talking === 'ai' ? 'animate-pulse-ring ' : ''}`} />
               <h3 className="text-lg font-semibold mt-4">Assistant</h3>
             </div>
 
             {/* User Card */}
-            <div className="bg-gray-700 rounded-xl p-6 flex flex-col items-center justify-center text-center">
+            <div className={`bg-gray-700 rounded-xl p-6 flex flex-col items-center justify-center text-center  h-100 ${talking === 'user' ? 'border-4 border-white-400 ' : ''}`}>
               <Image
                 src={imageUrl || '/avatar.jpg'}
                 alt="User"
@@ -62,9 +61,9 @@ const CreateInterview = () => {
           </div>
 
           {/* Input Prompt */}
-          <div className="bg-gray-700 rounded-lg px-4 py-3 mb-6">
-            <p className="text-sm text-gray-300 text-center">
-              "As a frontend developer, how would you optimize a web application for performance?"
+          <div className="bg-gray-700 rounded-lg px-4 py-3 mb-6 h-20 flex items-center justify-center">
+            <p className="text-lg text-gray-300 text-center">
+              &quot;As a frontend developer, how would you optimize a web application for performance?&quot;
             </p>
           </div>
 
