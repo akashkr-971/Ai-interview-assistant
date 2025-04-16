@@ -70,7 +70,7 @@ const LogIn = () => {
                         <div className='flex flex-col space-y-4 '>
                             <Button text="Log In"/>
                             <p className="text-sm text-center text-gray-600">
-                                Don't have an account?
+                                Don&apos;t have an account?
                                 <Link href="/sign-up" className="text-blue-500 hover:underline">
                                     Sign up
                                 </Link>

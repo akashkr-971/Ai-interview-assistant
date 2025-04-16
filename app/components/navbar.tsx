@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 
-const navbar = () => {
+const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   useEffect(() => {
@@ -51,4 +51,4 @@ const navbar = () => {
   )
 }
 
-export default navbar
+export default Navbar
