@@ -33,10 +33,11 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         return;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from("testimonials")
         .insert([{ user_id: userId, testimonial }]);
 
+    
     if (error) console.error("Error posting testimonial:", error);
     else {
         setTestimonial("");
