@@ -32,7 +32,7 @@ const openCheckout = async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      amount: selectedProduct.price * 100, // Razorpay expects amount in paise
+      amount: selectedProduct.price * 100,
     }),
   }).then(res => res.json());
 
