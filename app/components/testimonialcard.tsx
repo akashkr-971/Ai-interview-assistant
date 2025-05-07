@@ -21,7 +21,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({ item, className }) =>
         </div>
         <div>
           <p className="text-base md:text-lg text-gray-800 mb-2 md:mb-3 leading-relaxed">
-            "{item.testimonial}"
+            &quot;{item.testimonial}&quot;
           </p>
           <footer className="text-sm md:text-base font-medium text-purple-700">
             {item.user_id?.name || "Anonymous User"}
