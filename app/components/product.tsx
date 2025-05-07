@@ -32,7 +32,7 @@ interface RazorpayOptions {
   notes?: {
     product_id: string | number
     product_name: string
-    [key: string]: any
+    [key: string]: string | number
   }
   theme?: {
     color?: string
@@ -44,7 +44,6 @@ interface RazorpayOptions {
   [key: string]: unknown
 }
 
-// Extend Razorpay type on window
 declare global {
   interface Window {
     Razorpay: new (options: RazorpayOptions) => {
