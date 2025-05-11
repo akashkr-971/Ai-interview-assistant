@@ -2,6 +2,8 @@
 
 The AI Interview Assistant is a web application designed to help users prepare for job interviews with tailored mock interviews. It uses AI to generate questions based on various job roles and industries, and also offers the ability to purchase virtual coins for accessing premium features using **Razorpay** for payments.
 
+This project is tailored for freshers who have just graduated for developing their interviewing skills
+
 ---
 
 ## 🔧 Tech Stack
