@@ -4,7 +4,6 @@ import React from 'react'
 import { useEffect, useState } from 'react'
 import Navbar from '../components/navbar'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabaseClient'
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
 import { useRouter } from "next/navigation";
@@ -28,8 +27,6 @@ const CreateInterview = () => {
   const [messages, setMessages] = useState<SavedMessage[]>([]);
   const [lastMessage, setLastMessage] = useState<string>("");
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
-  const [interviewId, setInterviewId] = useState<string | null>(null);
-  const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
       const onCallStart = () => {
@@ -60,14 +57,12 @@ const CreateInterview = () => {
   
       const onSpeechStart = () => {
         console.log("speech start");
-        setIsSpeaking(true);
-        setTalking('ai')
+        setTalking('ai');
       };
   
       const onSpeechEnd = () => {
         console.log("speech end");
-        setIsSpeaking(false);
-        setTalking('user')
+        setTalking('user');
       };
   
       const onError = (error: Error) => {
@@ -97,10 +92,7 @@ const CreateInterview = () => {
       }
   
       if (callStatus === CallStatus.FINISHED) {
-        const type = "generate";
-        if (type === "generate") {
-          router.push("/");
-        }
+        router.push("/");
       }
     }, [messages, callStatus]);
   
