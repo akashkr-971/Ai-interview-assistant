@@ -23,7 +23,6 @@ enum CallStatus {
 const CreateInterview = () => {
   const router = useRouter();
   const [talking, setTalking] = useState<'ai' | 'user' | 'none'>('none')
-  const [status, setStatus] = useState('Interview Not Started')
   const [messages, setMessages] = useState<SavedMessage[]>([]);
   const [lastMessage, setLastMessage] = useState<string>("");
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
@@ -31,12 +30,10 @@ const CreateInterview = () => {
   useEffect(() => {
       const onCallStart = () => {
         setCallStatus(CallStatus.ACTIVE);
-        setStatus('Interview In Progress')
       };
   
       const onCallEnd = () => {
         setCallStatus(CallStatus.FINISHED);
-        setStatus("Interview Not Started");
       };
   
       interface Message {
@@ -98,12 +95,20 @@ const CreateInterview = () => {
   
     const handleCall = async () => {
       setCallStatus(CallStatus.CONNECTING);
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!);
+      const username = "Akash";
+      const userId = localStorage.getItem("userId") || "defaultUserId";
+      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+        variableValues: {
+          username: username,
+          userid: userId
+        },
+        clientMessages: [],
+        serverMessages: [],
+      });
     };
 
-  
     const handleDisconnect = () => {
-      setCallStatus(CallStatus.FINISHED); 
+      setCallStatus(CallStatus.FINISHED);
       vapi.stop();
     };
 
@@ -142,7 +147,7 @@ const CreateInterview = () => {
           </div>
 
           <div className="bg-gray-700 rounded-lg px-4 py-3 mb-6 h-20 flex items-center justify-center">
-            {messages.length > 0 && (
+            {messages.length > 0 ? (
               <div className="transcript-border">
                 <div className="transcript">
                   <p
@@ -156,6 +161,8 @@ const CreateInterview = () => {
                   </p>
                 </div>
               </div>
+            ) : (
+              <p>Welcome to interview creation!!!</p>
             )}
           </div>
 
@@ -166,19 +173,30 @@ const CreateInterview = () => {
             >
               🛡️ Report
             </button>
-            { status === "Interview Not Started" ?
+            {callStatus === "INACTIVE" || callStatus === "FINISHED" ? (
               <button
-                onClick={() => { handleCall(); }}
+                onClick={handleCall}
                 className="bg-green-600 text-white px-6 py-2 rounded-full text-sm hover:bg-green-500 transition"
               >
                 Start Interview Creation
-              </button> : <button
-                onClick={() => { handleDisconnect(); }}
+              </button>
+            ) : callStatus === "CONNECTING" ? (
+              <button
+                disabled
+                className="bg-gray-400 text-white px-6 py-2 rounded-full text-sm flex items-center justify-center gap-2"
+              >
+                <span className="loader w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Connecting...
+              </button>
+            ) : callStatus === "ACTIVE" ? (
+              <button
+                onClick={handleDisconnect}
                 className="bg-red-600 text-white px-6 py-2 rounded-full hover:bg-red-500 text-sm transition"
               >
                 Leave Interview Creation
               </button>
-            }
+            ) : null}
+
           </div>
         </div>
       </div>

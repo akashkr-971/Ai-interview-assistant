@@ -143,6 +143,19 @@
     }
 }
 
+
+.loader {
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.5s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 html,body{
   background-color: rgb(125, 59, 211);
 }
