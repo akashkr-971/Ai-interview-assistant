@@ -35,9 +35,8 @@ export async function POST(request: Request) {
             amount,
             questions:JSON.parse(questions),
             userid,
-            finalized: true,
-            coverImage: 'Image',
-            createdAt: new Date().toISOString(),
+            coverimage: 'Image',
+            createdat: new Date().toISOString(),
         }
 
         const { error } = await supabase.from("interviews").insert([interview]);
