@@ -6,13 +6,13 @@ import { supabase } from "@/lib/supabaseClient";
 interface Interview {
   id: number;
   image: string;
-  type: string; // e.g., "frontend", "backend", "global"
+  type: string;
   title: string;
   attended: boolean;
   description: string;
   date: string | null;
   score: string | null;
-  user_id: string | null; // Assuming user_id can be null for global interviews
+  user_id: string | null;
 }
 
 interface InterviewCardProps {
@@ -39,7 +39,7 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
         query = query.is("id", null);
       } else if (filterType === "createdByUser") {
         if (storedUserId) {
-          query = query.eq("id", storedUserId);
+          query = query.eq("created_by", storedUserId);
         } else {
           setError("User not logged in to view created interviews.");
           setLoading(false);
@@ -47,7 +47,7 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
         }
       } else if (filterType === "attended") {
         if (storedUserId) {
-          query = query.eq("id", storedUserId).eq("attended", true);
+          query = query.contains("attendees",[storedUserId] );
         } else {
           setError("User not logged in to view attended interviews.");
           setLoading(false);
@@ -55,7 +55,7 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
         }
       }
 
-      query = query.order("createdat", { ascending: false });
+      query = query.order("created_at", { ascending: false });
 
       const { data, error: fetchError } = await query;
 
@@ -81,16 +81,32 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
   }
 
   if (interviews.length === 0) {
-    let message = "No interviews found.";
-    if (filterType === "global") {
-      message = "No global interviews available.";
-    } else if (filterType === "createdByUser") {
-      message = "You haven't created any interviews yet.";
+    let content;
+  
+    if (filterType === "createdByUser") {
+      content = (
+        <>
+          <p>You haven't created any interviews yet.</p>
+          <p>Click the 'Create Interview' button to get started.</p>
+          <button
+            onClick={() => (window.location.href = "/create-interview")}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4"
+          >
+            Create Interview
+          </button>
+        </>
+      );
+    } else if (filterType === "global") {
+      content = "No global interviews available.";
     } else if (filterType === "attended") {
-      message = "You haven't attended any interviews yet.";
+      content = "You haven't attended any interviews yet.";
+    } else {
+      content = "No interviews found.";
     }
-    return <div className="text-center p-6 text-gray-500">{message}</div>;
+  
+    return <div className="text-center p-6 text-gray-500">{content}</div>;
   }
+  
 
   return (
     <div className="bg-white grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6 rounded-lg shadow-md">
