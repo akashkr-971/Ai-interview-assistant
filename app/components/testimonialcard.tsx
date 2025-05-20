@@ -13,13 +13,13 @@ interface TestimonialCardProps {
 }
 
 const TestimonialCard: React.FC<TestimonialCardProps> = ({ item, className }) => {
- return (
-    <div className={`bg-white/90 mr-50 backdrop-blur-lg p-4 md:p-6 rounded-xl shadow-lg border border-gray-100/50 hover:shadow-xl transition-shadow duration-300 group ${className || ''}`}>
+  return (
+    <div className={`bg-white/90 backdrop-blur-lg p-4 md:p-6 rounded-xl shadow-lg border border-gray-100/50 hover:shadow-xl transition-shadow duration-300 group ${className || ''}`}>
       <div className="flex items-start gap-3 md:gap-4">
         <div className="flex-shrink-0 p-2 md:p-3 bg-purple-100 rounded-lg">
           <User className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
         </div>
-        <div>
+        <div className="flex-grow"> 
           <p className="text-base md:text-lg text-gray-800 mb-2 md:mb-3 leading-relaxed">
             &quot;{item.testimonial}&quot;
           </p>

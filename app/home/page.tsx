@@ -10,31 +10,33 @@ import Testimonial from '../components/testimonial'
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-    
-    useEffect(() => {
-      const userId = localStorage.getItem("userId");
-      if (userId) {
-        setIsLoggedIn(true);
-      }
-    }, []);
+
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (userId) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
   return (
     <>
       <Navbar />
       <Hero />
+
       <section
-        id="interviews"
+        id="past-interviews"
         className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"
       >
         <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center">
-          🎤 Past Interviews
+          🎤 Past Attended Interviews
         </h2>
 
         {isLoggedIn ? (
-          <InterviewCard />
+          <InterviewCard filterType="attended"/>
         ) : (
           <div className="flex flex-col items-center justify-center py-10">
             <p className="text-gray-600 dark:text-gray-300 text-lg mb-4">
-              Please <span className="font-semibold text-blue-600 dark:text-blue-400">log in</span> to view your interviews.
+              Please <span className="font-semibold text-blue-600 dark:text-blue-400">log in</span> to view your past interviews.
             </p>
             <a
               href="/log-in"
@@ -51,18 +53,36 @@ const Home = () => {
           </div>
         )}
       </section>
-      {isLoggedIn ? (
-          <section id="interviews" className="bg-gray-200 dark:bg-gray-800 p-6 m-3 rounded-lg grid gap-2">
-              <h2 className="text-2xl font-bold mb-4 dark:text-white">Pick your Interviews</h2>
-              <InterviewCard />
-          </section>
-      ): ""}
+
+      {isLoggedIn && (
+        <section
+          id="created-interviews"
+          className="bg-gray-200 dark:bg-gray-800 px-6 py-8 m-3 rounded-xl shadow-md"
+        >
+          <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center">
+            📝 Your Created Interviews
+          </h2>
+          <InterviewCard filterType="createdByUser" />
+        </section>
+      )}
+
       <section
-        id="interviews"
+        id="public-interviews"
         className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"
       >
-      <Testimonial />
+        <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center">
+          🌐 All Public Interviews
+        </h2>
+        <InterviewCard filterType="global" />
       </section>
+
+      <section
+        id="testimonials"
+        className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"
+      >
+        <Testimonial />
+      </section>
+
       <Footer />
     </>
   )
