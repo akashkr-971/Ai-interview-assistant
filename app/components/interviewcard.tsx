@@ -86,8 +86,8 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
     if (filterType === "createdByUser") {
       content = (
         <>
-          <p>You haven't created any interviews yet.</p>
-          <p>Click the 'Create Interview' button to get started.</p>
+          <p>You haven&apos;t created any interviews yet.</p>
+          <p>Click the &apos;Create Interview&apos; button to get started.</p>
           <button
             onClick={() => (window.location.href = "/create-interview")}
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4"
