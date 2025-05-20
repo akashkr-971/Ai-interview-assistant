@@ -27,6 +27,8 @@ export async function POST(request: Request) {
 
         });
 
+        const uid = localStorage.getItem('uid');
+
         const interview = {
             role,
             level,
@@ -34,10 +36,12 @@ export async function POST(request: Request) {
             type,
             amount,
             questions:JSON.parse(questions),
-            userid,
+            uid,
             coverimage: 'Image',
             createdat: new Date().toISOString(),
         }
+
+        console.log(interview);
 
         const { error } = await supabase.from("interviews").insert([interview]);
 
