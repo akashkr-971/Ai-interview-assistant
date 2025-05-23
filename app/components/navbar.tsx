@@ -27,32 +27,63 @@ const Navbar = () => {
 
   return (
     <>
-      <div className="flex items-center m-3 rounded-lg p-4 bg-gray-800 text-white justify-between">
-        <div className="flex items-center space-x-5">
-          <Link href="/">
-            <Image src="/logo.webp" className='rounded-full' alt="Logo" width={50} height={50} />
+      <div className="flex items-center m-3 rounded-2xl p-4 bg-gray-900 text-white justify-between shadow-xl">
+        <div className="flex items-center space-x-4">
+          <Link href="/" className="flex items-center space-x-3 transition-transform duration-200 hover:scale-105">
+            <Image src="/logo.webp" className="rounded-full border-2 border-blue-400" alt="PrepWise Logo" width={55} height={55} />
+            <h2 className="text-xl font-extrabold text-blue-300 tracking-wide">PrepWise</h2>
           </Link>
-          <h1 className="text-lg font-bold justify-left">PrepWise</h1>
         </div>
         <div>
-          <ul className="flex space-x-4 items-center">
-            <li><Link href="/about">About</Link></li>
+          <ul className="flex space-x-6 items-center">
+            <li>
+              <Link
+                href="/about"
+                className="text-gray-300 hover:text-white transition-colors duration-200 text-lg font-medium"
+              >
+                About
+              </Link>
+            </li>
             {isLoggedIn ? (
-              <li className="flex items-center space-x-2">
-                <Link href="/profile">Profile</Link>
-                <button onClick={() => setShowModal(true)} className='w-30'>
-                  <div className="bg-orange-500 rounded-full p-1 flex items-center justify-center text-white font-bold text-sm w-30">
-                    <Image src="/coin.svg" alt="Coin" width={20} height={20} className='mr-2' />
+              <li className="flex items-center space-x-5">
+                <Link
+                  href="/live-interview"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-white font-semibold text-lg shadow-md hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                >
+                  Live Interviews
+                </Link>
+                <Link
+                  href="/profile"
+                  className="text-gray-300 hover:text-white transition-colors duration-200 text-lg font-medium"
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={() => setShowModal(true)}
+                  className='relative group'
+                >
+                  <div className="bg-orange-500 rounded-full p-2 flex items-center justify-center text-white font-bold text-base min-w-[120px] shadow-lg transition-transform duration-200 group-hover:scale-105">
+                    <Image src="/coin.svg" alt="Coin" width={22} height={22} className='mr-2' />
                     <span>5 Coins</span>
-                    <span className='ml-2'>+</span>
+                    <span className='ml-2 text-xl'>+</span>
                   </div>
                 </button>
-                <button onClick={handleLogout} className='w-30 bg-red-500 rounded-full pl-3 pr-3 p-1 flex align-center justify-center text-white text-sm hover:bg-red-600'>
+                <button
+                  onClick={handleLogout}
+                  className='px-4 py-2 bg-red-600 rounded-full text-white font-semibold text-base shadow-md hover:bg-red-700 transition-colors duration-200'
+                >
                   Log Out
                 </button>
               </li>
             ) : (
-              <li><Link href="/log-in">Login</Link></li>
+              <li>
+                <Link
+                  href="/log-in"
+                  className="px-4 py-2 bg-blue-600 rounded-full text-white font-semibold text-lg shadow-md hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Login
+                </Link>
+              </li>
             )}
           </ul>
         </div>
@@ -60,7 +91,7 @@ const Navbar = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="bg-transparent backdrop-blur-sm fixed inset-0 flex items-center justify-center z-50">
+        <div className="bg-black bg-opacity-60 backdrop-blur-sm fixed inset-0 flex items-center justify-center z-50 animate-fade-in">
           <ProductModal onClose={() => setShowModal(false)} />
         </div>
       )}
