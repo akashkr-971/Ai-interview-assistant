@@ -152,6 +152,7 @@ export async function POST(request: Request) {
             throw new Error('Not enough questions found in fallback extraction');
           }
         } catch (fallbackErr) {
+          console.error('Failed to extract questions from fallback method:', fallbackErr);
           return Response.json(
             { success: false, error: 'Failed to parse questions data from AI.' },
             { status: 500 }
