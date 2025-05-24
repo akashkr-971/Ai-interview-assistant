@@ -18,156 +18,269 @@ const SpeechRecognition = typeof window !== 'undefined'
   : undefined;
 
 const CreateInterview: React.FC = () => {
-
   const [talking, setTalking] = useState<'ai' | 'user' | 'none'>('none');
   const [lastMessage, setLastMessage] = useState<string>('');
   const [step, setStep] = useState<number>(-1);
-  const [info, setInfo] = useState({ role: '', level: '', type: '', techstack: '', questions: '' });
+  const [info, setInfo] = useState({ role: '', level: '', type: '', techstack: '', amount: '' ,userid: '' });
   const [interviewStarted, setInterviewStarted] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [canRetry, setCanRetry] = useState(false);
 
   const recognitionRef = useRef<any>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stepRef = useRef(step);
 
   const questions = [
     "Hi! Welcome to your personalized interview creator. What's the role you're hiring for?",
-    "Awesome! What is the experience level for this role? Junior, Mid, Senior",
-    "Great! Is it a full-time, part-time, or freelance role?",
-    "Got it! What tech stack should the candidate be familiar with?",
-    "Cool! How many questions should the interview have?",
+    "Awesome! What is the experience level for this role? entry-level, Middle-level, or Senior-level?",
+    "Do you want to conduct a behavioural interview, a technical one, or mixed?",
+    "Got it! Which technologies or programming languages should the candidate know?",
+    "Cool! How many questions should the interview have? You can say like 5 questions or 10 questions.",
     "Thanks! Your interview creation is complete. Good luck and have a great day!"
   ];
 
-  const stepRef = useRef(step); // keep a stable ref for step in async callbacks
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
 
-useEffect(() => {
-  stepRef.current = step;
-}, [step]);
+  useEffect(() => {
+    return () => {
+      cleanupRecognition();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
-const speakQuestion = (index: number) => {
-  if (!synth) return;
-  setTalking('ai');
-  const text = questions[index];
-  const utterance = new SpeechSynthesisUtterance(text);
+  const cleanupRecognition = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onnomatch = null;
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
+      }
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  };
 
-  utterance.onend = () => {
-    setTalking('user');
-    if (index < questions.length - 1) {
-      listen();
+  const speakQuestion = (index: number) => {
+    if (!synth) return;
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    setTalking('ai');
+    const text = questions[index];
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-GB';
+    utterance.rate = 0.9;
+    
+    utterance.onend = () => {
+      if (index < questions.length - 1) {
+        setTalking('user');
+        setTimeout(() => {
+          listen();
+        }, 500);
+      } else {
+        setTalking('none');
+        setInterviewStarted(false);
+        sendInterviewData();
+      }
+    };
+
+    utterance.onerror = (error) => {
+      console.error('Speech synthesis error:', error);
+      setTalking('none');
+    };
+
+    synth.speak(utterance);
+    setLastMessage(text);
+  };
+
+  const listen = () => {
+    if (!SpeechRecognition) return;
+
+    cleanupRecognition();
+
+    try {
+      recognitionRef.current = new SpeechRecognition();
+      const recognition = recognitionRef.current;
+      
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 3;
+      recognition.continuous = false;
+
+      setIsListening(true);
+      setCanRetry(false);
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        
+        for (let i = 0; i < event.results[0].length; i++) {
+          const alternative = event.results[0][i].transcript.trim();
+          if (alternative.length > 0) {
+            transcript = alternative;
+            break;
+          }
+        }
+        
+        console.log('Recognized speech:', transcript);
+        
+        if (transcript && transcript.length > 0) {
+          setLastMessage(`You said: "${transcript}"`);
+          processAnswer(transcript);
+        } else {
+          setCanRetry(true);
+          setLastMessage("I couldn't understand that clearly. Click 'Try Again' or speak louder.");
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        setCanRetry(true);
+        
+        if (event.error === 'no-speech') {
+          setLastMessage("I didn't hear anything. Click 'Try Again' and speak clearly.");
+        } else if (event.error === 'audio-capture') {
+          setLastMessage("Microphone issue. Click 'Try Again' and check your microphone.");
+        } else if (event.error === 'not-allowed') {
+          setLastMessage('Microphone access denied. Please allow microphone access.');
+          setTalking('none');
+          setCanRetry(false);
+        } else if (event.error === 'network') {
+          setLastMessage("Network error. Click 'Try Again' to retry.");
+        } else {
+          setLastMessage("Recognition error. Click 'Try Again' to retry.");
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        if (!canRetry) {
+          setCanRetry(true);
+        }
+      };
+
+      recognition.onnomatch = () => {
+        console.log('No match found');
+        setIsListening(false);
+        setCanRetry(true);
+        setLastMessage("I couldn't understand that. Click 'Try Again' and speak more clearly.");
+      };
+
+      recognition.start();
+    } catch (error) {
+      console.error('Error starting recognition:', error);
+      setIsListening(false);
+      setCanRetry(true);
+      setTalking('none');
+      setLastMessage("Error starting microphone. Click 'Try Again' to retry.");
     }
   };
 
-  synth.speak(utterance);
-  setLastMessage(text);
-};
+  const processAnswer = (transcript: string) => {
+    const currentStep = stepRef.current;
+    
+    cleanupRecognition();
+    setCanRetry(false);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
 
-const listen = () => {
-  if (!SpeechRecognition) return;
-
-  // Clear previous handlers
-  if (recognitionRef.current) {
-    recognitionRef.current.onresult = null;
-    recognitionRef.current.onerror = null;
-    recognitionRef.current.stop();
-    recognitionRef.current = null;
-  }
-
-  recognitionRef.current = new SpeechRecognition();
-  const recognition = recognitionRef.current;
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-
-  interface InterviewInfo {
-    role: string;
-    level: string;
-    type: string;
-    techstack: string;
-    questions: string;
-  }
-
-  interface SpeechRecognitionEventResult {
-    [index: number]: {
-      transcript: string;
-    };
-  }
-
-  interface SpeechRecognitionEvent {
-    results: SpeechRecognitionEventResult[];
-  }
-
-  interface SpeechRecognitionErrorEvent {
-    error: string;
-  }
-
-  recognition.onresult = (event: SpeechRecognitionEvent) => {
-    const transcript: string = event.results[0][0].transcript.trim();
-    setLastMessage(transcript);
-
-    setInfo((prev: InterviewInfo) => {
-      const updated: InterviewInfo = { ...prev };
-      const currentStep: number = stepRef.current;
-
-      if (currentStep >= 0 && currentStep < questions.length - 1) {
-        switch (currentStep) {
-          case 0: updated.role = transcript; break;
-          case 1: updated.level = transcript; break;
-          case 2: updated.type = transcript; break;
-          case 3: updated.techstack = transcript; break;
-          case 4: updated.questions = transcript; break;
-        }
+    setInfo(prev => {
+      const updated = { ...prev };
+      switch (currentStep) {
+        case 0: updated.role = transcript; break;
+        case 1: updated.level = transcript; break;
+        case 2: updated.type = transcript; break;
+        case 3: updated.techstack = transcript; break;
+        case 4: updated.amount = transcript; break;
       }
+      console.log('Updated info:', updated);
       return updated;
     });
 
-    setStep((prev: number) => {
-      const next: number = prev + 1;
-      if (next < questions.length) {
-        setTimeout(() => speakQuestion(next), 500);
-      } else {
-        setInterviewStarted(false);
-        setTalking('none');
-        console.log('Final Interview Details:', info);
+    setTalking('none');
+
+    timeoutRef.current = setTimeout(() => {
+      const nextStep = currentStep + 1;
+      setStep(nextStep);
+
+      if (nextStep < questions.length) {
+        speakQuestion(nextStep);
       }
-      return next;
+    }, 1000);
+  };
+
+  const retryListening = () => {
+    if (interviewStarted && stepRef.current < questions.length - 1) {
+      setTalking('user');
+      setCanRetry(false);
+      setTimeout(() => {
+        listen();
+      }, 500);
+    }
+  };
+
+  const sendInterviewData = () => {
+    console.log('Final Interview Data:', info);
+    
+    fetch('/api/AI/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(info),
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to post");
+      console.log("Data posted successfully");
+    })
+    .catch(err => {
+      console.error("API POST failed", err);
     });
-
-    recognition.stop();
   };
 
-  recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-    console.error('Speech recognition error', event.error);
-    if (event.error === 'no-speech' && interviewStarted) {
-      setTimeout(() => listen(), 500);
-    }
-  };
-
-  interface CustomSpeechRecognitionErrorEvent extends Event {
-    error: string;
-  }
-
-  recognition.onerror = (event: CustomSpeechRecognitionErrorEvent) => {
-    console.error('Speech recognition error', event.error);
-    if (event.error === 'no-speech' && interviewStarted) {
-      setTimeout(() => listen(), 500);
-    }
-  };
-
-  recognition.start();
-};
-
-  const startInterview = () => {
+  const startInterview = async () => {
     if (interviewStarted) return;
-    setInfo({ role: '', level: '', type: '', techstack: '', questions: '' });
-    setInterviewStarted(true);
-    setStep(0);
-    speakQuestion(0);
+    
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      setInfo({ role: '', level: '', type: '', techstack: '', amount: '', userid: localStorage.getItem('userd') || 'default_user' });
+      setInterviewStarted(true);
+      setStep(0);
+      setLastMessage('');
+      setCanRetry(false);
+      
+      speakQuestion(0);
+    } catch (err) {
+      console.error("Microphone access denied", err);
+      alert("Microphone access is required for the interview. Please allow microphone access and try again.");
+    }
   };
 
   const stopInterview = () => {
     synth?.cancel();
-    if (recognitionRef.current) recognitionRef.current.stop();
+    cleanupRecognition();
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
     setTalking('none');
     setInterviewStarted(false);
     setStep(-1);
+    setCanRetry(false);
+    setLastMessage('Interview stopped.');
   };
 
   return (
@@ -181,38 +294,59 @@ const listen = () => {
           <div className={`bg-gray-700 rounded-xl p-6 flex flex-col items-center justify-center text-center h-100 ${talking === 'ai' ? 'border-4 border-white-400' : ''}`}>
             <Image src="/logo.webp" alt="AI Interviewer" width={80} height={80} className={`rounded-full ${talking === 'ai' ? 'animate-pulse-ring' : ''}`} />
             <h3 className="text-lg font-semibold mt-4">Assistant</h3>
+            {talking === 'ai' && <p className="text-sm text-gray-300 mt-2">Speaking...</p>}
           </div>
           <div className={`bg-gray-700 rounded-xl p-6 flex flex-col items-center justify-center text-center h-100 ${talking === 'user' ? 'border-4 border-white-400' : ''}`}>
             <Image src="/avatar.jpg" alt="User" width={80} height={80} className={`rounded-full ${talking === 'user' ? 'animate-pulse-ring' : ''}`} />
             <h3 className="text-lg font-semibold mt-4">You</h3>
+            {isListening && <p className="text-sm text-gray-300 mt-2">Listening...</p>}
           </div>
         </div>
         <div className="bg-gray-700 rounded-lg px-4 py-3 mb-6 h-20 flex items-center justify-center">
-          <p className={cn("transition-opacity duration-500 opacity-0", "animate-fadeIn opacity-100")}>{lastMessage || 'Welcome to interview creation!!!'}</p>
+          <p className={cn("transition-opacity duration-500 opacity-0", "animate-fadeIn opacity-100")}>
+            {lastMessage || 'Welcome to interview creation!!!'}
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <button
-              onClick={() => alert('Reported')}
-              className="bg-gray-600 text-white px-6 py-2 rounded-full hover:bg-gray-500 text-sm transition"
-            >
-              🛡️ Report
-            </button>
-            {interviewStarted ? (
+          <button
+            onClick={() => alert('Reported')}
+            className="bg-gray-600 text-white px-6 py-2 rounded-full hover:bg-gray-500 text-sm transition"
+          >
+            🛡️ Report
+          </button>
+          {interviewStarted ? (
+            <>
               <button
                 onClick={stopInterview}
                 className="bg-red-600 text-white px-6 py-2 rounded-full hover:bg-red-500 transition"
               >
                 Stop Interview
               </button>
-            ) : (
-              <button
-                onClick={startInterview}
-                className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-500 transition"
-              >
-                Start Interview
-              </button>
-            )}
+              {canRetry && (
+                <button
+                  onClick={retryListening}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-500 transition animate-pulse"
+                >
+                  🎤 Try Again
+                </button>
+              )}
+            </>
+          ) : (
+            <button
+              onClick={startInterview}
+              className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-500 transition"
+            >
+              Start Interview
+            </button>
+          )}
+        </div>
+        {interviewStarted && (
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-400">
+              Step {step + 1} of {questions.length - 1}
+            </p>
           </div>
+        )}
       </div>
     </div>
   );
