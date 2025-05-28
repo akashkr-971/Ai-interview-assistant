@@ -61,10 +61,11 @@ export async function POST(request: Request) {
         
         Please correct and normalize these values and return ONLY a JSON object with keys matching the input fields. Do not include any explanatory text, conversation, or formatting - just the raw JSON object.
 
-        convert the amount into a number if it is a string, and ensure it is a valid integer.
+        convert the amount into a number if it is a string, and ensure it is a valid integer.if u cant recognize the amount, set it to 5.
 
         The levels are entery-level, mid-level, and senior-level.
-        The types are technical, behavioral, and mixed.
+
+        The types are technical, behavioral, and mixed. select the one that matches closest to the input.
 
         correct the json format to ensure it is valid and properly formatted.
 
@@ -73,7 +74,8 @@ export async function POST(request: Request) {
             "role": "${role}",
             "level": "${level}",
             "techstack": "${techstack}",
-            "amount": ${amount}
+            "amount": ${amount},
+            "type": "${type}"
         }
         Return only this JSON format (no additional text):
         {"role": "corrected role here", "level": "corrected level here", "techstack": "corrected, comma-separated list of tech terms here", "amount": corrected_amount_here}
@@ -97,11 +99,12 @@ export async function POST(request: Request) {
         );
       }
 
-      const { role: normRole, type: normType, techstack: normTechstack, amount: normAmount } = normalizedData;
+      const { role: normRole, type: normType, level: normLevel, techstack: normTechstack, amount: normAmount } = normalizedData;
   
       const questionPrompt = `
         Generate exactly ${normAmount} interview questions for a ${normRole} position.
-        Experience level: ${type}
+        Experience level: ${normLevel}
+        it should be of type ${normType}
         Tech stack: ${normTechstack}
         Question focus: ${normType}
         
@@ -165,7 +168,7 @@ export async function POST(request: Request) {
         level: level,
         techstack: normTechstack.split(',').map((t: string) => t.trim()),
         type: normType,
-        amount,
+        amount: normAmount,
         questions,
         created_by: userid,
         coverImage: 'Image',

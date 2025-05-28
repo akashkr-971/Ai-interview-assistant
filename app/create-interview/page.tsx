@@ -21,7 +21,7 @@ const CreateInterview: React.FC = () => {
   const [talking, setTalking] = useState<'ai' | 'user' | 'none'>('none');
   const [lastMessage, setLastMessage] = useState<string>('');
   const [step, setStep] = useState<number>(-1);
-  const [info, setInfo] = useState({ role: '', level: '', type: '', techstack: '', amount: '' ,userid: '' });
+  const [info, setInfo] = useState({ role: '', level: '', type: '', techstack: '', amount: '', userid: '' });
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [canRetry, setCanRetry] = useState(false);
@@ -29,6 +29,7 @@ const CreateInterview: React.FC = () => {
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stepRef = useRef(step);
+  const infoRef = useRef(info); // Add ref to track current info state
 
   const questions = [
     "Hi! Welcome to your personalized interview creator. What's the role you're hiring for?",
@@ -42,6 +43,11 @@ const CreateInterview: React.FC = () => {
   useEffect(() => {
     stepRef.current = step;
   }, [step]);
+
+  // Keep infoRef in sync with info state
+  useEffect(() => {
+    infoRef.current = info;
+  }, [info]);
 
   useEffect(() => {
     return () => {
@@ -90,7 +96,8 @@ const CreateInterview: React.FC = () => {
       } else {
         setTalking('none');
         setInterviewStarted(false);
-        sendInterviewData();
+        // Use the ref to get the final state
+        sendInterviewData(infoRef.current);
       }
     };
 
@@ -196,18 +203,21 @@ const CreateInterview: React.FC = () => {
       clearTimeout(timeoutRef.current);
     }
 
-    setInfo(prev => {
-      const updated = { ...prev };
-      switch (currentStep) {
-        case 0: updated.role = transcript; break;
-        case 1: updated.level = transcript; break;
-        case 2: updated.type = transcript; break;
-        case 3: updated.techstack = transcript; break;
-        case 4: updated.amount = transcript; break;
-      }
-      console.log('Updated info:', updated);
-      return updated;
-    });
+    // Create the updated info object first
+    const updatedInfo = { ...infoRef.current };
+    switch (currentStep) {
+      case 0: updatedInfo.role = transcript; break;
+      case 1: updatedInfo.level = transcript; break;
+      case 2: updatedInfo.type = transcript; break;
+      case 3: updatedInfo.techstack = transcript; break;
+      case 4: updatedInfo.amount = transcript; break;
+    }
+    
+    console.log('Updated info:', updatedInfo);
+    
+    // Update both state and ref
+    setInfo(updatedInfo);
+    infoRef.current = updatedInfo;
 
     setTalking('none');
 
@@ -231,13 +241,13 @@ const CreateInterview: React.FC = () => {
     }
   };
 
-  const sendInterviewData = () => {
-    console.log('Final Interview Data:', info);
+  const sendInterviewData = (finalInfo = infoRef.current) => {
+    console.log('Final Interview Data:', finalInfo);
     
     fetch('/api/AI/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(info),
+      body: JSON.stringify(finalInfo),
     })
     .then(res => {
       if (!res.ok) throw new Error("Failed to post");
@@ -254,7 +264,24 @@ const CreateInterview: React.FC = () => {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      setInfo({ role: '', level: '', type: '', techstack: '', amount: '', userid: localStorage.getItem('userd') || 'default_user' });
+      const userId = localStorage.getItem('userId') || '';
+      if (!userId) {
+        console.error("User ID not found in local storage");
+        return;
+      }
+      
+      const initialInfo = { 
+        role: '', 
+        level: '', 
+        type: '', 
+        techstack: '', 
+        amount: '', 
+        userid: userId 
+      };
+      
+      setInfo(initialInfo);
+      infoRef.current = initialInfo; // Sync the ref immediately
+      
       setInterviewStarted(true);
       setStep(0);
       setLastMessage('');

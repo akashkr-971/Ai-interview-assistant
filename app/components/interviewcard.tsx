@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { supabase } from "@/lib/supabaseClient";
 
-// Define the Interview interface
+// Updated Interview interface to match your actual data structure
 interface Interview {
   id: number;
-  image: string;
+  coverImage: string;
   type: string;
-  title: string;
-  attended: boolean;
-  description: string;
-  date: string | null;
-  score: string | null;
-  user_id: string | null;
+  role: string;
+  level: string;
+  techstack: string[];
+  amount: number;
+  questions: string[];
+  attendees: string[] | null;
+  created_at: string;
+  created_by: string;
 }
 
 interface InterviewCardProps {
@@ -27,7 +29,7 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
-    console.log(storedUserId);
+    console.log("Stored User ID:", storedUserId);
     setUserId(storedUserId);
 
     const fetchInterviews = async () => {
@@ -36,7 +38,8 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
       let query = supabase.from("interviews").select("*");
 
       if (filterType === "global") {
-        query = query.is("id", null);
+        // Show all interviews for global view
+        // Remove the incorrect .is("id", null) filter
       } else if (filterType === "createdByUser") {
         if (storedUserId) {
           query = query.eq("created_by", storedUserId);
@@ -47,7 +50,8 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
         }
       } else if (filterType === "attended") {
         if (storedUserId) {
-          query = query.contains("attendees",[storedUserId] );
+          // Fixed: Use @> operator for array contains check
+          query = query.contains("attendees", [storedUserId]);
         } else {
           setError("User not logged in to view attended interviews.");
           setLoading(false);
@@ -58,6 +62,8 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
       query = query.order("created_at", { ascending: false });
 
       const { data, error: fetchError } = await query;
+
+      console.log("Fetched interviews:", data);
 
       if (fetchError) {
         console.error("Error fetching interviews:", fetchError.message);
@@ -106,58 +112,109 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
   
     return <div className="text-center p-6 text-gray-500">{content}</div>;
   }
-  
 
   return (
-    <div className="bg-white grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6 rounded-lg shadow-md">
-      {interviews.map((interview) => (
-        <div key={interview.id} className="bg-gradient-to-r from-[rgba(26,28,32,1)] to-[#08090D] text-white p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
-          <div className="relative">
-            <span className="absolute -top-4 -right-4 bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded">
-              {interview.type}
-            </span>
-          </div>
+    <div className="bg-white grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 p-6">
+      {interviews.map((interview) => {
+        const created_date = new Date(interview.created_at).toLocaleDateString();
+        
+        return (
+          <div key={interview.id} className="text-white p-6 border rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 min-h-[320px] flex flex-col justify-between" 
+          style={{ backgroundImage: `url(nightstar.jpg)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+            <div className="relative">
+              <span className="absolute -top-4 -right-4 bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded">
+                {interview.type}
+              </span>
+            </div>
 
-          <Image src={interview.image} alt="Interview Image" width={72} height={72} className="rounded-full mb-3" />
-          <h3 className="text-xl font-bold">{interview.title}</h3>
-          <p className="text-gray-400 font-semibold">{interview.description}</p>
-          
-          <div className="flex flex-row items-center font-semibold justify-between mt-4 text-sm text-gray-400">
-            <div className="flex items-center gap-1 ">
-              <Image src="/calendar.svg" width="20" height="20" alt="Calendar" />
-              <span>{interview.date || "N/A"}</span>
+            <Image 
+              src={"/robot.png"} 
+              alt="Interview Image" 
+              width={72} 
+              height={72} 
+              className="rounded-full mb-3" 
+            />
+            
+            <h3 className="text-xl font-bold mb-2">{interview.role}</h3>
+            <p className="text-gray-400 font-semibold mb-2">
+              {interview.level} • {interview.amount} questions
+            </p>
+            
+            <div className="flex flex-row items-center font-semibold justify-between mt-4 text-sm text-gray-400">
+              <div className="flex items-center gap-1">
+                <Image src="/calendar.svg" width="20" height="20" alt="Calendar" />
+                <span>{created_date}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image src="/star.svg" width="20" height="20" alt="Score" />
+                <span>New</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Image src="/star.svg" width="20" height="20" alt="Score" />
-              <span>{interview.score || "N/A"}</span>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-6 mt-4">
-            <div className="flex items-center relative">
-              <Image
-                src="/Technology-cover/react.svg"
-                className="rounded-full bg-gray-200 p-1 w-[30px] h-[30px] z-10"
-                width={30}
-                height={30}
-                alt="React"
-              />
-              <Image
-                src="/Technology-cover/tailwind.svg"
-                className="rounded-full bg-gray-200 p-1 w-[30px] h-[30px] -ml-2 z-20"
-                width={30}
-                height={30}
-                alt="Tailwind"
-              />
+            {/* Technology Stack Display */}
+            <div className="flex items-center gap-6 mt-4">
+              <div className="flex items-center relative">
+                {interview.techstack && interview.techstack.slice(0, 3).map((tech, index) => {
+                  // Map technology names to their respective icons
+                  const techIcons: { [key: string]: string } = {
+                    'React': '/Technology-cover/react.svg',
+                    'Python': '/Technology-cover/python.svg',
+                    'JavaScript': '/Technology-cover/javascript.svg',
+                    'TypeScript': '/Technology-cover/typescript.svg',
+                    'Node.js': '/Technology-cover/nodejs.svg',
+                    'Next.js': '/Technology-cover/nextjs.svg',
+                    'Vue': '/Technology-cover/vue.svg',
+                    'Angular': '/Technology-cover/angular.svg',
+                    'Tailwind': '/Technology-cover/tailwind.svg',
+                    'Html': '/Technology-cover/html.svg',
+                    'CSS': '/Technology-cover/css.svg',
+                    'CPP': '/Technology-cover/cpp.svg',
+                    'C': '/Technology-cover/c.svg',
+                    'Bootstrap': '/Technology-cover/bootstrap.svg',
+                    'Java': '/Technology-cover/java.svg',
+                    'Go': '/Technology-cover/go.svg',
+                    'Ruby': '/Technology-cover/ruby.svg',
+                    'PHP': '/Technology-cover/php.svg',
+                    'Django': '/Technology-cover/django.svg',
+                  };
+                  
+                  const iconPath = techIcons[tech] || '/Technology-cover/default.svg';
+                  
+                  return (
+                    <Image
+                      key={tech}
+                      src={iconPath}
+                      className={`rounded-full bg-gray-200 p-1 w-[30px] h-[30px] ${index > 0 ? '-ml-2' : ''} z-${10 + index}`}
+                      width={30}
+                      height={30}
+                      alt={tech}
+                      title={tech}
+                    />
+                  );
+                })}
+                {interview.techstack && interview.techstack.length > 3 && (
+                  <span className="ml-2 text-xs text-gray-400">
+                    +{interview.techstack.length - 3} more
+                  </span>
+                )}
+              </div>
             </div>
-            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">
-              View Interview
+
+            {/* Action Button */}
+            <button 
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full mt-4"
+              onClick={() => {
+                console.log('View interview:', interview);
+                window.location.href = `/attend-interview/${interview.id}`;
+              }}
+            >
+              {filterType === "attended" ? "Retake Interview" : "Start Interview"}
             </button>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
-}
+};
 
 export default InterviewCard;
