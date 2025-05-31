@@ -127,16 +127,20 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
               </span>
             </div>
 
-            <Image 
-              src={"/robot.png"} 
-              alt="Interview Image" 
-              width={72} 
-              height={72} 
-              className="rounded-full mb-3" 
-            />
+            <div className="flex flex-col items-center mb-4">
+              <Image 
+                src={interview.coverImage ? `https://logo.clearbit.com/${interview.coverImage}.com` : 'https://logo.clearbit.com/default.com'}
+                alt="Interview Image" 
+                width={72} 
+                height={72} 
+                className="rounded-full mb-3" 
+              />
+              <p>{interview.coverImage}</p>
+            </div>
+
             
-            <h3 className="text-xl font-bold mb-2">{interview.role}</h3>
-            <p className="text-gray-400 font-semibold mb-2">
+            <h3 className="text-xl font-bold">{interview.role}</h3>
+            <p className="text-gray-300 font-semibold mb-2">
               {interview.level} • {interview.amount} questions
             </p>
             

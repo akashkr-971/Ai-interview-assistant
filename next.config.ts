@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: 'pyvudipoynpodijwuygx.supabase.co', 
         pathname: '/storage/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'logo.clearbit.com',
+        pathname: '/**',
+      },
     ],
   },
 };

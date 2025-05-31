@@ -6,23 +6,16 @@ export async function GET() {
     return Response.json({success:true,data:'THANK YOU'},{status:200})
 }
 
-// Helper function to extract JSON from AI response
 function extractJsonFromText(text: string): any {
-  // First, try to parse the text directly
   try {
     return JSON.parse(text);
   } catch {
-    // If direct parsing fails, try to extract JSON from the text
-    
-    // Look for JSON block between ```json and ``` (for arrays)
     const jsonArrayBlockMatch = text.match(/```json\s*(\[[\s\S]*?\])\s*```/);
     if (jsonArrayBlockMatch) {
       try {
         return JSON.parse(jsonArrayBlockMatch[1]);
       } catch {}
     }
-    
-    // Look for JSON block between ```json and ``` (for objects)
     const jsonBlockMatch = text.match(/```json\s*(\{[\s\S]*?\})\s*```/);
     if (jsonBlockMatch) {
       try {
@@ -30,7 +23,6 @@ function extractJsonFromText(text: string): any {
       } catch {}
     }
     
-    // Look for any JSON array in the text
     const jsonArrayMatch = text.match(/\[[\s\S]*\]/);
     if (jsonArrayMatch) {
       try {
@@ -38,24 +30,21 @@ function extractJsonFromText(text: string): any {
       } catch {}
     }
     
-    // Look for any JSON object in the text
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       try {
         return JSON.parse(jsonMatch[0]);
       } catch {}
     }
-    
-    // If all else fails, throw an error
     throw new Error('No valid JSON found in response');
   }
 }
 
 export async function POST(request: Request) {
     try {
-      const { type, role, level, techstack, amount, userid } = await request.json();
-      console.log('Received data:', { type, role, level, techstack, amount, userid });
-  
+      const { type, role, level, techstack, amount, company, userid } = await request.json();
+      console.log('Received data:', { type, role, level, techstack, amount, company, userid });
+
       const normalizePrompt = `
         You are an expert in converting casual, misspelled, or speech-to-text user inputs into clean, proper technical terms or phrases.
         
@@ -67,6 +56,8 @@ export async function POST(request: Request) {
 
         The types are technical, behavioral, and mixed. select the one that matches closest to the input.
 
+        The company name should be a valid company name, if it is not a valid company name, set it to "Default".Also i need only the name rest of the text should be removed.
+
         correct the json format to ensure it is valid and properly formatted.
 
         Input:
@@ -75,10 +66,11 @@ export async function POST(request: Request) {
             "level": "${level}",
             "techstack": "${techstack}",
             "amount": ${amount},
-            "type": "${type}"
+            "type": "${type}",
+            "company": "${company}",
         }
         Return only this JSON format (no additional text):
-        {"role": "corrected role here", "level": "corrected level here", "techstack": "corrected, comma-separated list of tech terms here", "amount": corrected_amount_here}
+        {"role": "corrected role here", "level": "corrected level here", "techstack": "corrected, comma-separated list of tech terms here", "amount": corrected_amount_here, "company": "corrected company name here", "type": "corrected type here"}
         `;
 
       const { text: normalizedJson } = await generateText({
@@ -99,18 +91,21 @@ export async function POST(request: Request) {
         );
       }
 
-      const { role: normRole, type: normType, level: normLevel, techstack: normTechstack, amount: normAmount } = normalizedData;
+      const { role: normRole, type: normType, level: normLevel, techstack: normTechstack, amount: normAmount, company: normCompany } = normalizedData;
   
       const questionPrompt = `
         You are an AI interviewer. Your task is to generate a realistic and natural-sounding interview flow for a candidate applying for a ${normRole} role.
+        If the company is specified, use it to tailor the questions to that company. If it is unknown company, use a generic approach.
+      
 
         Requirements:
-        1. **Start with 2-3 introductory questions** to warm up the candidate. These should be casual and ask about their background, interests, or goals.
+        1. **Start with 2-3 introductory questions** to warm up the candidate. These should be casual and ask about their background, interests, or goals.Also add a welcome message like welcome to the company if the name is default say welcome to the interview.
         2. **Then generate exactly ${normAmount} core technical interview questions**. These must match:
           - Experience level: ${normLevel}
           - Interview type: ${normType}
           - Tech stack: ${normTechstack}
           - Focus: ${normType}
+          - Company: ${normCompany}
         3. **End with 1-2 wrap-up questions** (e.g., “Do you have any questions for us?” or “Where do you see yourself in the next few years?”)
 
         🔒 Constraints:
@@ -183,13 +178,13 @@ export async function POST(request: Request) {
   
       const interview = {
         role: normRole,
-        level: level,
+        level: normLevel,
         techstack: normTechstack.split(',').map((t: string) => t.trim()),
         type: normType,
         amount: normAmount,
         questions,
         created_by: userid,
-        coverImage: 'Image',
+        coverImage: normCompany,
         created_at: new Date().toISOString(),
       };
   

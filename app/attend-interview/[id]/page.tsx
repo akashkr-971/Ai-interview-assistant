@@ -65,28 +65,27 @@ const AttendInterview: React.FC = () => {
     "Can you briefly describe your educational background and any relevant experience?"
   ];
 
-  // Sample interview data - replace with actual data from props/API
-  const sampleInterviewData: InterviewData = {
-    id: 4,
-    role: "Front End Developer",
-    level: "entry level",
-    type: "Technical",
-    techstack: ['React', 'Python'],
-    amount: 5,
-    questions: [
-      'Describe the React component lifecycle and explain the purpose of each phase (mounting, updating, unmounting).',
-      'Explain the difference between state and props in React and how they are used to manage data within a component.',
-      'How would you make an API call to a Python backend from a React application? What are some common methods for handling the response?',
-      'What are some common techniques for optimizing React application performance, such as memoization or lazy loading?',
-      'Explain the concept of JSX and how it relates to creating components in React. Provide a simple example of JSX code.'
-    ],
-    created_by: "8c063db3-c1d4-4648-ab48-5d0f22e96f41"
-  }
-
   useEffect(() => {
-    setInterviewData(sampleInterviewData);
-    setAnswers(new Array(sampleInterviewData.questions.length).fill(''));
+    const interviewId = window.location.pathname.split('/').pop();
+    if (interviewId) {
+      fetchInterviewData(interviewId);
+    }
   }, []);
+
+
+  const fetchInterviewData = async (interviewId: string) => {
+    try {
+      const response = await fetch(`/api/interview/${interviewId}`);
+      if (!response.ok) throw new Error('Failed to fetch interview data');
+      const data: InterviewData = await response.json();
+      console.log('Fetched interview data:', data);
+      setInterviewData(data);
+      setAnswers(new Array(data.questions.length).fill(''));
+    } catch (error) {
+      console.error('Error fetching interview data:', error);
+      alert('Failed to load interview data. Please try again later.');
+    }
+  };
 
   useEffect(() => {
     currentQuestionRef.current = currentQuestionIndex;

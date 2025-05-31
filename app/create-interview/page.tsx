@@ -3,7 +3,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '../components/navbar';
 import Image from 'next/image';
+import Router from 'next/router';
 import { cn } from "@/lib/utils";
+import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -21,22 +23,23 @@ const CreateInterview: React.FC = () => {
   const [talking, setTalking] = useState<'ai' | 'user' | 'none'>('none');
   const [lastMessage, setLastMessage] = useState<string>('');
   const [step, setStep] = useState<number>(-1);
-  const [info, setInfo] = useState({ role: '', level: '', type: '', techstack: '', amount: '', userid: '' });
+  const [info, setInfo] = useState({ role: '', level: '', type: '', techstack: '', amount: '', company: '', userid: '' });
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [canRetry, setCanRetry] = useState(false);
-
+  const router = useRouter();
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stepRef = useRef(step);
-  const infoRef = useRef(info); // Add ref to track current info state
+  const infoRef = useRef(info);
 
   const questions = [
     "Hi! Welcome to your personalized interview creator. What's the role you're hiring for?",
     "Awesome! What is the experience level for this role? entry-level, Middle-level, or Senior-level?",
-    "Do you want to conduct a behavioural interview, a technical one, or mixed?",
+    "Do you want to conduct a behavioural interview, a technical interview, or mixed interview?",
     "Got it! Which technologies or programming languages should the candidate know?",
     "Cool! How many questions should the interview have? You can say like 5 questions or 10 questions.",
+    "Are you preparing for a specific company or just a general interview?",
     "Thanks! Your interview creation is complete. Good luck and have a great day!"
   ];
 
@@ -211,6 +214,7 @@ const CreateInterview: React.FC = () => {
       case 2: updatedInfo.type = transcript; break;
       case 3: updatedInfo.techstack = transcript; break;
       case 4: updatedInfo.amount = transcript; break;
+      case 5: updatedInfo.company = transcript; break;
     }
     
     console.log('Updated info:', updatedInfo);
@@ -252,6 +256,7 @@ const CreateInterview: React.FC = () => {
     .then(res => {
       if (!res.ok) throw new Error("Failed to post");
       console.log("Data posted successfully");
+      router.push('/');
     })
     .catch(err => {
       console.error("API POST failed", err);
@@ -276,6 +281,7 @@ const CreateInterview: React.FC = () => {
         type: '', 
         techstack: '', 
         amount: '', 
+        company: '',
         userid: userId 
       };
       
