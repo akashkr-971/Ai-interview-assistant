@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
-import { supabase } from '@/lib/supabaseClient'; // adjust path as needed
+import { supabase } from '@/lib/supabaseClient';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = await params;
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  const id = url.pathname.split('/').pop(); // or extract based on URL structure
 
   if (!id) {
     return new Response(JSON.stringify({ error: 'Interview ID is required' }), {
@@ -10,9 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     });
   }
 
-  if(id){
-    console.log("Interview ID:", id);
-  }
+  console.log("Interview ID:", id);
 
   const { data, error } = await supabase
     .from('interviews')
