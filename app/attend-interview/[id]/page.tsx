@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '../../components/navbar';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
+import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -26,44 +27,41 @@ interface InterviewData {
   amount: number;
   questions: string[];
   created_by: string;
-}
-
-interface GeneralAnswers {
-  name: string;
-  experience: string;
-  background: string;
+  company: string;
 }
 
 const AttendInterview: React.FC = () => {
   const [talking, setTalking] = useState<'ai' | 'user' | 'none'>('none');
   const [lastMessage, setLastMessage] = useState<string>('');
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(-1);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [interviewCompleted, setInterviewCompleted] = useState(false);
+  const [interviewTime, setInterviewTime] = useState<number>(0);
   const [isListening, setIsListening] = useState(false);
   const [canRetry, setCanRetry] = useState(false);
   const [answers, setAnswers] = useState<string[]>([]);
-  const [generalAnswers, setGeneralAnswers] = useState<GeneralAnswers>({ name: '', experience: '', background: '' });
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
-  const [isTimerActive, setIsTimerActive] = useState(false);
-  const [isGeneralPhase, setIsGeneralPhase] = useState(true);
-  const [currentGeneralQuestion, setCurrentGeneralQuestion] = useState<number>(-1);
+  const [isAnswerComplete, setIsAnswerComplete] = useState(false);
+  const [currentAnswer, setCurrentAnswer] = useState<string>('');
+
+  const router = useRouter();
 
   const recognitionRef = useRef<any>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const currentQuestionRef = useRef(currentQuestionIndex);
   const answersRef = useRef(answers);
-  const generalAnswersRef = useRef(generalAnswers);
-  const currentGeneralQuestionRef = useRef(currentGeneralQuestion);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const listeningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isProcessingRef = useRef(false);
 
-  // General questions that come before technical questions
-  const generalQuestions = [
-    "Let's start with some general questions. Please tell me your full name.",
-    "How many years of experience do you have in software development or related fields?",
-    "Can you briefly describe your educational background and any relevant experience?"
-  ];
+  // Update refs when state changes
+  useEffect(() => {
+    currentQuestionRef.current = currentQuestionIndex;
+  }, [currentQuestionIndex]);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   useEffect(() => {
     const interviewId = window.location.pathname.split('/').pop();
@@ -72,6 +70,18 @@ const AttendInterview: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    return () => {
+      stopTimer();
+      cleanupRecognition();
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+      }
+      if (listeningTimeoutRef.current) {
+        clearTimeout(listeningTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const fetchInterviewData = async (interviewId: string) => {
     try {
@@ -87,131 +97,72 @@ const AttendInterview: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    currentQuestionRef.current = currentQuestionIndex;
-  }, [currentQuestionIndex]);
+  const startTimer = () => {
+    stopTimer();
+    setInterviewTime(0);
+    timerRef.current = setInterval(() => {
+      setInterviewTime((prevTime) => prevTime + 1);
+    }, 1000);
+    console.log('Timer started');
+  };
 
-  useEffect(() => {
-    answersRef.current = answers;
-  }, [answers]);
-
-  useEffect(() => {
-    generalAnswersRef.current = generalAnswers;
-  }, [generalAnswers]);
-
-  useEffect(() => {
-    currentGeneralQuestionRef.current = currentGeneralQuestion;
-  }, [currentGeneralQuestion]);
-
-  useEffect(() => {
-    return () => {
-      cleanupRecognition();
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, []);
+  const stopTimer = () => {
+    if (timerRef.current) {
+      console.log('Clearing timer interval:', timerRef.current);
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+      console.log('Timer stopped');
+    }
+  };
 
   const cleanupRecognition = () => {
+    console.log('Cleaning up recognition');
+    
     if (recognitionRef.current) {
       try {
         recognitionRef.current.onresult = null;
         recognitionRef.current.onerror = null;
         recognitionRef.current.onend = null;
         recognitionRef.current.onnomatch = null;
+        recognitionRef.current.onspeechstart = null;
+        recognitionRef.current.onspeechend = null;
         recognitionRef.current.stop();
       } catch (error) {
         console.error('Error stopping recognition:', error);
       }
       recognitionRef.current = null;
     }
+    
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (listeningTimeoutRef.current) {
+      clearTimeout(listeningTimeoutRef.current);
+      listeningTimeoutRef.current = null;
+    }
+    
     setIsListening(false);
+    isProcessingRef.current = false;
   };
 
-  const startTimer = (minutes: number = 3) => {
-    const totalSeconds = minutes * 60;
-    setTimeRemaining(totalSeconds);
-    setIsTimerActive(true);
-
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setIsTimerActive(false);
-          // Auto-proceed to next question when time runs out
-          handleTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    timerRef.current = timer;
-  };
-
-  const stopTimer = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setIsTimerActive(false);
-  };
-
-  const handleTimeUp = () => {
-    cleanupRecognition();
-    setTalking('none');
-    setLastMessage("Time's up! Moving to the next question.");
+  const speakQuestion = (questionIndex: number) => {
+    if (!synth || !interviewData || questionIndex >= interviewData.questions.length) return;
     
-    setTimeout(() => {
-      if (isGeneralPhase) {
-        proceedToNextGeneralQuestion();
-      } else {
-        proceedToNextTechnicalQuestion();
-      }
-    }, 2000);
-  };
-
-  const speakQuestion = (questionIndex: number, isGeneral: boolean = false) => {
-    if (!synth || !interviewData) return;
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
+    console.log(`Speaking question ${questionIndex + 1}: ${interviewData.questions[questionIndex]}`);
     setTalking('ai');
+    setIsAnswerComplete(false);
+    setCurrentAnswer('');
     
-    let text = '';
-    if (isGeneral) {
-      if (questionIndex === 0) {
-        text = `Welcome to your ${interviewData.type.toLowerCase()} interview for the ${interviewData.role} position. ${generalQuestions[questionIndex]}`;
-      } else {
-        text = generalQuestions[questionIndex];
-      }
-    } else {
-      if (questionIndex === 0) {
-        text = `Great! Now let's move to the technical questions. Question ${questionIndex + 1}: ${interviewData.questions[questionIndex]}`;
-      } else {
-        text = `Question ${questionIndex + 1}: ${interviewData.questions[questionIndex]}`;
-      }
-    }
-    
+    let text = `${interviewData.questions[questionIndex]}`;
+    setLastMessage(`${interviewData.questions[questionIndex]}`);
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-GB';
     utterance.rate = 0.9;
     
     utterance.onend = () => {
+      console.log('AI finished speaking, switching to user');
       setTalking('user');
-      if (isGeneral) {
-        setLastMessage(`General Question ${questionIndex + 1}: ${generalQuestions[questionIndex]}`);
-      } else {
-        setLastMessage(`Technical Question ${questionIndex + 1}: ${interviewData.questions[questionIndex]}`);
-      }
-      
-      // Start timer - shorter for general questions
-      startTimer(isGeneral ? 2 : 3);
       setTimeout(() => {
         listen();
       }, 500);
@@ -226,178 +177,190 @@ const AttendInterview: React.FC = () => {
   };
 
   const listen = () => {
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      console.error('Speech recognition not supported');
+      return;
+    }
 
     cleanupRecognition();
 
     try {
       recognitionRef.current = new SpeechRecognition();
       const recognition = recognitionRef.current;
-      
       recognition.lang = 'en-US';
-      recognition.interimResults = false;
+      recognition.interimResults = true;
       recognition.maxAlternatives = 1;
-      recognition.continuous = false;
+      recognition.continuous = true;
 
       setIsListening(true);
       setCanRetry(false);
+      isProcessingRef.current = false;
 
       let finalTranscript = '';
+      let interimTranscript = '';
+
+      recognition.onspeechstart = () => {
+        console.log('Speech detected');
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+      };
 
       recognition.onresult = (event: any) => {
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (isProcessingRef.current) return;
+        
+        finalTranscript = '';
+        interimTranscript = '';
+
+        for (let i = 0; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript.trim();
+            finalTranscript += event.results[i][0].transcript.trim() + ' ';
+          } else {
+            interimTranscript += event.results[i][0].transcript.trim() + ' ';
           }
         }
         
-        console.log('Final transcript:', finalTranscript);
+        console.log('Final:', finalTranscript, 'Interim:', interimTranscript);
         
-        if (finalTranscript && finalTranscript.length > 2) {
-          setLastMessage(`Your answer: "${finalTranscript}"`);
-          processAnswer(finalTranscript);
+        // Update current answer state
+        const completeAnswer = (finalTranscript + interimTranscript).trim();
+        setCurrentAnswer(completeAnswer);
+        
+        // Show live transcript to user
+        if (completeAnswer) {
+          setLastMessage(`Your answer: "${completeAnswer}"`);
         }
       };
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        setCanRetry(true);
-        
-        if (event.error === 'no-speech') {
-          setLastMessage("I didn't hear anything. Click 'Try Again' and speak clearly.");
-        } else if (event.error === 'audio-capture') {
-          setLastMessage("Microphone issue. Click 'Try Again' and check your microphone.");
-        } else if (event.error === 'not-allowed') {
-          setLastMessage('Microphone access denied. Please allow microphone access.');
-          setTalking('none');
-          setCanRetry(false);
-        } else if (event.error === 'network') {
-          setLastMessage("Network error. Click 'Try Again' to retry.");
-        } else {
-          setLastMessage("Recognition error. Click 'Try Again' to retry.");
+        if (!isProcessingRef.current) {
+          setIsListening(false);
+          setCanRetry(true);
+          
+          if (event.error === 'no-speech') {
+            setLastMessage("I didn't hear anything. Click 'Continue Speaking' and speak clearly.");
+          } else if (event.error === 'audio-capture') {
+            setLastMessage("Microphone issue. Click 'Continue Speaking' and check your microphone.");
+          } else if (event.error === 'not-allowed') {
+            setLastMessage('Microphone access denied. Please allow microphone access.');
+            setTalking('none');
+            setCanRetry(false);
+          } else if (event.error === 'network') {
+            setLastMessage("Network error. Click 'Continue Speaking' to retry.");
+          } else {
+            setLastMessage("Recognition error. Click 'Continue Speaking' to retry.");
+          }
         }
       };
 
       recognition.onend = () => {
-        setIsListening(false);
-        if (talking === 'user' && !canRetry) {
-          setCanRetry(true);
+        console.log('Recognition ended');
+        if (!isProcessingRef.current) {
+          setIsListening(false);
+          if (!isAnswerComplete && talking === 'user') {
+            setCanRetry(true);
+          }
         }
       };
 
       recognition.onnomatch = () => {
         console.log('No match found');
-        setIsListening(false);
-        setCanRetry(true);
-        setLastMessage("I couldn't understand that. Click 'Try Again' and speak more clearly.");
+        if (!isProcessingRef.current) {
+          setIsListening(false);
+          setCanRetry(true);
+          setLastMessage("I couldn't understand that. Click 'Continue Speaking' and speak more clearly.");
+        }
       };
 
       recognition.start();
       
-      // Auto-stop after 30 seconds to prevent hanging
-      setTimeout(() => {
-        if (recognitionRef.current) {
+      listeningTimeoutRef.current = setTimeout(() => {
+        if (recognitionRef.current && isListening && !isProcessingRef.current) {
+          console.log('Auto-stopping recognition after timeout');
           recognitionRef.current.stop();
         }
-      }, 30000);
+      }, 60000);
       
     } catch (error) {
       console.error('Error starting recognition:', error);
       setIsListening(false);
       setCanRetry(true);
       setTalking('none');
-      setLastMessage("Error starting microphone. Click 'Try Again' to retry.");
+      setLastMessage("Error starting microphone. Click 'Continue Speaking' to retry.");
     }
+  };
+
+  // Helper function to count words
+  const countWords = (text: string): number => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  };
+
+  // Check if answer is sufficient (8 or more words)
+  const isAnswerSufficient = (): boolean => {
+    return countWords(currentAnswer) >= 8;
+  };
+
+  const nextQuestion = () => {
+    if (!interviewData || interviewCompleted || !interviewStarted) return;
+    
+    // Check if current answer is sufficient
+    if (!isAnswerSufficient()) {
+      setLastMessage("Please provide a more detailed answer (at least 8 words) before proceeding to the next question.");
+      return;
+    }
+    
+    // Process the current answer
+    processAnswer(currentAnswer);
   };
 
   const processAnswer = (transcript: string) => {
+    if (isProcessingRef.current) return;
+    
+    console.log('Processing answer:', transcript);
+    isProcessingRef.current = true;
     cleanupRecognition();
-    stopTimer();
     setCanRetry(false);
     setTalking('none');
+    setIsAnswerComplete(true);
     
-    if (isGeneralPhase) {
-      // Save general answer
-      const questionIndex = currentGeneralQuestionRef.current;
-      const updatedGeneralAnswers = { ...generalAnswersRef.current };
-      
-      switch (questionIndex) {
-        case 0: updatedGeneralAnswers.name = transcript; break;
-        case 1: updatedGeneralAnswers.experience = transcript; break;
-        case 2: updatedGeneralAnswers.background = transcript; break;
-      }
-      
-      setGeneralAnswers(updatedGeneralAnswers);
-      generalAnswersRef.current = updatedGeneralAnswers;
-      
-      timeoutRef.current = setTimeout(() => {
-        proceedToNextGeneralQuestion();
-      }, 2000);
-    } else {
-      // Save technical answer
-      const questionIndex = currentQuestionRef.current;
-      const updatedAnswers = [...answersRef.current];
-      updatedAnswers[questionIndex] = transcript;
-      setAnswers(updatedAnswers);
-      answersRef.current = updatedAnswers;
-
-      timeoutRef.current = setTimeout(() => {
-        proceedToNextTechnicalQuestion();
-      }, 2000);
-    }
+    const questionIndex = currentQuestionRef.current;
+    const updatedAnswers = [...answersRef.current];
+    updatedAnswers[questionIndex] = transcript;
+    setAnswers(updatedAnswers);
+    answersRef.current = updatedAnswers;
+    
+    // Don't show the processed answer in the transcript
+    setLastMessage("Answer recorded successfully.");
+    
+    // Add delay before proceeding to next question
+    setTimeout(() => {
+      proceedToNextQuestion();
+    }, 1500);
   };
 
-  const proceedToNextGeneralQuestion = () => {
-    const nextQuestionIndex = currentGeneralQuestionRef.current + 1;
-    
-    if (nextQuestionIndex < generalQuestions.length) {
-      setCurrentGeneralQuestion(nextQuestionIndex);
-      speakQuestion(nextQuestionIndex, true);
-    } else {
-      // Move to technical questions
-      setIsGeneralPhase(false);
-      setCurrentQuestionIndex(0);
-      speakQuestion(0, false);
-    }
-  };
-
-  const proceedToNextTechnicalQuestion = () => {
+  const proceedToNextQuestion = () => {
     if (!interviewData) return;
-
+    
     const nextQuestionIndex = currentQuestionRef.current + 1;
     
     if (nextQuestionIndex < interviewData.questions.length) {
+      console.log(`Moving to question ${nextQuestionIndex + 1}`);
       setCurrentQuestionIndex(nextQuestionIndex);
-      speakQuestion(nextQuestionIndex, false);
+      isProcessingRef.current = false;
+      speakQuestion(nextQuestionIndex);
     } else {
-      // Interview completed
+      console.log('All questions completed');
       completeInterview();
     }
   };
 
-  const skipCurrentQuestion = () => {
-    cleanupRecognition();
-    stopTimer();
-    setCanRetry(false);
-    setTalking('none');
-    
-    if (isGeneralPhase) {
-      setLastMessage("Skipping general question...");
-      setTimeout(() => {
-        proceedToNextGeneralQuestion();
-      }, 1000);
-    } else {
-      setLastMessage("Skipping technical question...");
-      setTimeout(() => {
-        proceedToNextTechnicalQuestion();
-      }, 1000);
-    }
-  };
-
   const completeInterview = () => {
+    console.log('Completing interview');
     setInterviewCompleted(true);
     setTalking('ai');
+    stopTimer();
     
     const completionMessage = "Congratulations! You have completed the interview. Thank you for your time and responses.";
     const utterance = new SpeechSynthesisUtterance(completionMessage);
@@ -413,34 +376,74 @@ const AttendInterview: React.FC = () => {
     setLastMessage(completionMessage);
   };
 
-  const submitInterviewResults = () => {
+  const submitInterviewResults = async () => {
+    if (!interviewData) return;
+  
     const results = {
-      interviewId: interviewData?.id,
-      generalAnswers: generalAnswersRef.current,
+      interviewId: interviewData.id,
+      questions: interviewData.questions,
       technicalAnswers: answersRef.current,
+      questionsAndAnswers: interviewData.questions.map((question, index) => ({
+        question: question,
+        answer: answersRef.current[index] || ''
+      })),
+      interviewDetails: {
+        role: interviewData.role,
+        level: interviewData.level,
+        type: interviewData.type,
+        techstack: interviewData.techstack,
+        company: interviewData.company
+      },
       completedAt: new Date().toISOString(),
-      userId: localStorage.getItem('userId') || ''
+      userId: localStorage.getItem('userId') || '',
+      totalTime: interviewTime
     };
     
     console.log('Interview Results:', results);
     
-    // Submit to API
-    fetch('/api/interview/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(results),
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Failed to submit");
-      console.log("Interview results submitted successfully");
-    })
-    .catch(err => {
-      console.error("API submission failed", err);
-    });
+    try {
+      // Show loading state
+      setLastMessage('Generating your feedback...');
+      
+      const response = await fetch('/api/AI/generate-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(results),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const feedbackResponse = await response.json();
+      
+      if (feedbackResponse.success && feedbackResponse.feedback) {
+        // Store the complete results including feedback for the feedback page
+        const completeResults = {
+          interviewId: interviewData.id,
+          feedback: feedbackResponse.feedback,
+          totalTime: interviewTime,
+          completedAt: results.completedAt
+        };
+        router.push(`/feedback/${interviewData.id}`);
+      } else {
+        throw new Error('Invalid response from feedback API');
+      }
+      
+    } catch (error) {
+      console.error("API submission failed", error);
+      setLastMessage('Failed to generate feedback. Please try again.');
+      
+      // Show retry option
+      setTimeout(() => {
+        setLastMessage('Feedback generation failed. You can still view your interview completion.');
+      }, 3000);
+    }
   };
 
   const retryListening = () => {
-    if (interviewStarted && !interviewCompleted) {
+    if (interviewStarted && !interviewCompleted && !isAnswerComplete && !isProcessingRef.current) {
+      console.log('Retrying listening');
       setTalking('user');
       setCanRetry(false);
       setTimeout(() => {
@@ -455,14 +458,16 @@ const AttendInterview: React.FC = () => {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
       
+      console.log('Starting interview');
       setInterviewStarted(true);
-      setIsGeneralPhase(true);
-      setCurrentGeneralQuestion(0);
-      setCurrentQuestionIndex(-1);
+      setCurrentQuestionIndex(0);
       setLastMessage('');
       setCanRetry(false);
-      
-      speakQuestion(0, true); // Start with first general question
+      setIsAnswerComplete(false);
+      setCurrentAnswer('');
+      isProcessingRef.current = false;
+      startTimer();
+      speakQuestion(0);
     } catch (err) {
       console.error("Microphone access denied", err);
       alert("Microphone access is required for the interview. Please allow microphone access and try again.");
@@ -470,22 +475,18 @@ const AttendInterview: React.FC = () => {
   };
 
   const stopInterview = () => {
+    console.log('Stopping interview');
     synth?.cancel();
     cleanupRecognition();
     stopTimer();
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    
     setTalking('none');
     setInterviewStarted(false);
     setInterviewCompleted(false);
-    setIsGeneralPhase(true);
-    setCurrentGeneralQuestion(-1);
-    setCurrentQuestionIndex(-1);
+    setCurrentQuestionIndex(0);
     setCanRetry(false);
+    setIsAnswerComplete(false);
+    setCurrentAnswer('');
+    isProcessingRef.current = false;
     setLastMessage('Interview stopped.');
   };
 
@@ -504,18 +505,21 @@ const AttendInterview: React.FC = () => {
       <Navbar />
       <div className="max-w-4xl bg-gray-800 rounded-2xl p-8 shadow-lg m-10 mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <span className="text-blue-400 font-medium text-lg">
-              {interviewData.role} - {interviewData.type} Interview
-            </span>
-            <p className="text-gray-400 text-sm mt-1">
-              Level: {interviewData.level} | Tech Stack: {interviewData.techstack.join(', ')}
-            </p>
-            {isTimerActive && (
-              <div className="bg-red-600 px-4 py-2 rounded-lg">
-                <span className="font-mono text-lg">{formatTime(timeRemaining)}</span>
+          <div className="flex items-center w-full justify-between">
+            <div>
+              <span className="text-blue-400 font-medium text-lg">
+                {interviewData.role} - {interviewData.type} Interview
+              </span>
+              <p className="text-gray-400 text-sm mt-1">
+                Level: {interviewData.level} | Tech Stack: {interviewData.techstack.join(', ')}
+              </p>
+            </div>
+            <div className="flex items-center justify-between mt-4 p-3 bg-gray-50 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600 font-semibold text-md">🕒 Interview Time:</span>
+                <span className="text-gray-700 text-md font-semibold">{formatTime(interviewTime)}</span>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
@@ -553,7 +557,18 @@ const AttendInterview: React.FC = () => {
               >
                 End Interview
               </button>
-              {canRetry && (
+              
+              {/* Next Question button - always visible when user is talking and has sufficient answer */}
+              {talking === 'user' && isAnswerSufficient() && (
+                <button
+                  onClick={nextQuestion}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-500 transition animate-pulse"
+                >
+                  Next Question
+                </button>
+              )}
+
+              {canRetry && !isAnswerComplete && !isProcessingRef.current && (
                 <button
                   onClick={retryListening}
                   className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-500 transition animate-pulse"
@@ -562,11 +577,10 @@ const AttendInterview: React.FC = () => {
                 </button>
               )}
               <button
-                onClick={skipCurrentQuestion}
-                className="bg-yellow-600 text-white px-6 py-2 rounded-full hover:bg-yellow-500 transition"
-                disabled={interviewCompleted}
+                onClick={completeInterview}
+                className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-500 transition"
               >
-                Skip Question
+                Complete Interview
               </button>
             </>
           ) : !interviewCompleted ? (
@@ -580,55 +594,21 @@ const AttendInterview: React.FC = () => {
             <div className="text-center">
               <p className="text-green-400 text-lg font-semibold">Interview Completed!</p>
               <p className="text-gray-400 text-sm mt-2">Your responses have been submitted.</p>
+              <p className="text-blue-400 text-sm mt-1">Total time: {formatTime(interviewTime)}</p>
             </div>
           )}
         </div>
 
         {interviewStarted && !interviewCompleted && (
           <div className="mt-4 text-center">
-            {isGeneralPhase ? (
-              <p className="text-sm text-gray-400">
-                General Question {currentGeneralQuestion + 1} of {generalQuestions.length}
-              </p>
-            ) : (
-              <p className="text-sm text-gray-400">
-                Technical Question {currentQuestionIndex + 1} of {interviewData.questions.length}
-              </p>
-            )}
+            <p className="text-sm text-gray-400">
+              Question {currentQuestionIndex + 1} of {interviewData.questions.length}
+            </p>
             <div className="w-full bg-gray-600 rounded-full h-2 mt-2">
-              {isGeneralPhase ? (
-                <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentGeneralQuestion + 1) / generalQuestions.length) * 100}%` }}
-                ></div>
-              ) : (
-                <div 
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentQuestionIndex + 1 + generalQuestions.length) / (interviewData.questions.length + generalQuestions.length)) * 100}%` }}
-                ></div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {interviewCompleted && (
-          <div className="mt-6 bg-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-3 text-green-400">Interview Summary</h3>
-            <div className="space-y-2">
-              <div>
-                <h4 className="font-medium text-blue-400">General Information:</h4>
-                <p className="text-sm text-gray-300">Name: {generalAnswers.name || 'Not provided'}</p>
-                <p className="text-sm text-gray-300">Experience: {generalAnswers.experience || 'Not provided'}</p>
-                <p className="text-sm text-gray-300">Background: {generalAnswers.background || 'Not provided'}</p>
-              </div>
-              <div>
-                <h4 className="font-medium text-green-400">Technical Questions:</h4>
-                <p className="text-sm text-gray-300">
-                  Questions Answered: {answers.filter(answer => answer.length > 0).length} of {interviewData.questions.length}
-                </p>
-                <p className="text-sm text-gray-300">Interview Type: {interviewData.type}</p>
-                <p className="text-sm text-gray-300">Position: {interviewData.role}</p>
-              </div>
+              <div 
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${((currentQuestionIndex + 1) / (interviewData.questions.length)) * 100}%` }}
+              ></div>
             </div>
           </div>
         )}
