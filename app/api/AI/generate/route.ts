@@ -102,18 +102,36 @@ export async function POST(request: Request) {
       const { role: normRole, type: normType, level: normLevel, techstack: normTechstack, amount: normAmount } = normalizedData;
   
       const questionPrompt = `
-        Generate exactly ${normAmount} interview questions for a ${normRole} position.
-        Experience level: ${normLevel}
-        it should be of type ${normType}
-        Tech stack: ${normTechstack}
-        Question focus: ${normType}
-        
-        IMPORTANT: Return ONLY a valid JSON array with properly escaped quotes. Each question should be a complete string without line breaks. Do not use any quotes or apostrophes within the question text that aren't properly escaped.
-        
-        Example format: ["What is your experience with React", "How do you handle state management", "Describe your testing approach"]
-        
-        Return only the JSON array with no additional text or formatting.
+        You are an AI interviewer. Your task is to generate a realistic and natural-sounding interview flow for a candidate applying for a ${normRole} role.
+
+        Requirements:
+        1. **Start with 2-3 introductory questions** to warm up the candidate. These should be casual and ask about their background, interests, or goals.
+        2. **Then generate exactly ${normAmount} core technical interview questions**. These must match:
+          - Experience level: ${normLevel}
+          - Interview type: ${normType}
+          - Tech stack: ${normTechstack}
+          - Focus: ${normType}
+        3. **End with 1-2 wrap-up questions** (e.g., “Do you have any questions for us?” or “Where do you see yourself in the next few years?”)
+
+        🔒 Constraints:
+        - Return ONLY a valid JSON array of strings.
+        - Each question must be a single line.
+        - Escape quotes and apostrophes properly.
+        - Do NOT include any extra text, explanation, or formatting.
+        - The final array will include ~(${normAmount} + ~3 to 5) total questions.
+
+        ✅ Example:
+        [
+          "Can you introduce yourself?",
+          "What motivated you to pursue a career in software?",
+          "How do you manage your learning outside of work?",
+          "Explain how Flutter handles widget rendering internally.",
+          "What are some performance optimization techniques in Dart?",
+          "How do you implement state management using Provider?",
+          "Do you have any questions for us?"
+        ]
         `;
+
   
       const { text: questionsText } = await generateText({
         model: google('gemini-2.0-flash-001'),
