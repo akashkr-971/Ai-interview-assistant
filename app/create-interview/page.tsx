@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '../components/navbar';
 import Image from 'next/image';
-import Router from 'next/router';
 import { cn } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
 

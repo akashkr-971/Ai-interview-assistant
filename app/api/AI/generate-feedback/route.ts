@@ -34,8 +34,6 @@ export async function POST(request: NextRequest) {
 
     const {
       interviewId,
-      questions,
-      technicalAnswers,
       questionsAndAnswers,
       interviewDetails,
       completedAt,

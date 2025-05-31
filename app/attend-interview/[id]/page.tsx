@@ -154,7 +154,7 @@ const AttendInterview: React.FC = () => {
     setIsAnswerComplete(false);
     setCurrentAnswer('');
     
-    let text = `${interviewData.questions[questionIndex]}`;
+    const text = `${interviewData.questions[questionIndex]}`;
     setLastMessage(`${interviewData.questions[questionIndex]}`);
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-GB';
@@ -418,13 +418,6 @@ const AttendInterview: React.FC = () => {
       const feedbackResponse = await response.json();
       
       if (feedbackResponse.success && feedbackResponse.feedback) {
-        // Store the complete results including feedback for the feedback page
-        const completeResults = {
-          interviewId: interviewData.id,
-          feedback: feedbackResponse.feedback,
-          totalTime: interviewTime,
-          completedAt: results.completedAt
-        };
         router.push(`/feedback/${interviewData.id}`);
       } else {
         throw new Error('Invalid response from feedback API');
