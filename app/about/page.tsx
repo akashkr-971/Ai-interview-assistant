@@ -1,6 +1,7 @@
 'use client';
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
+import Image from 'next/image';
 
 export default function About() {
     return (
@@ -9,7 +10,7 @@ export default function About() {
             <main className="flex-1 container mx-auto px-6 py-12">
                 <div className="flex flex-col md:flex-row items-center gap-12">
                     <div className="md:w-1/2 flex justify-center">
-                        <img
+                        <Image
                             src="/logo.webp"
                             alt="AI Interview Helper"
                             className="rounded-xl shadow-lg w-full max-w-md transition-transform duration-500 hover:scale-105 animate-fade-in"
