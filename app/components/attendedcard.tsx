@@ -94,7 +94,7 @@ const AttendedInterviewCard: React.FC = () => {
   };
 
   const getUpdatedDate = (interviewId:number)=>{
-    let match = feedbacks.find(f => f.interview_id === interviewId);
+    const match = feedbacks.find(f => f.interview_id === interviewId);
     if(match && match.updated_at){
         const matchDate = new Date(match.updated_at).toLocaleDateString();
         return matchDate;

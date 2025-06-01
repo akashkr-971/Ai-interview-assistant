@@ -4,6 +4,7 @@ import Navbar from "../components/navbar"; // Assuming these components exist
 import Footer from "../components/footer"; // Assuming these components exist
 import { FaEdit, FaLinkedin, FaPhone, FaMapMarkerAlt, FaEnvelope, FaUpload, FaFileAlt, FaCamera } from 'react-icons/fa';
 import { AiOutlineCloseCircle, AiOutlinePlusCircle } from 'react-icons/ai';
+import Image from "next/image";
 
 // Define the core user data structure
 interface UserData {
@@ -198,7 +199,7 @@ const ProfilePage: React.FC = () => {
                 {/* Profile Header Section */}
                 <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8 pb-6 border-b border-gray-200">
                     <div className="relative w-32 h-32">
-                        <img
+                        <Image
                             src={user.avatar}
                             alt="User Avatar"
                             className="w-full h-full rounded-full border-4 border-blue-400 shadow-md object-cover"
