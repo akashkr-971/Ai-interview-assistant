@@ -7,6 +7,7 @@ import Footer from '../components/footer'
 import Hero from '../components/hero'
 import InterviewCard from '../components/interviewcard'
 import Testimonial from '../components/testimonial'
+import AttendedInterviewCard from '../components/attendedcard'
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -32,7 +33,7 @@ const Home = () => {
         </h2>
 
         {isLoggedIn ? (
-          <InterviewCard filterType="attended"/>
+          <AttendedInterviewCard />
         ) : (
           <div className="flex flex-col items-center justify-center py-10">
             <p className="text-gray-600 dark:text-gray-300 text-lg mb-4">

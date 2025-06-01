@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     });
 
     const {
-      interviewId,
+      interview_id,
       questionsAndAnswers,
       interviewDetails,
       completedAt,
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     const savedFeedback = await saveFeedbackToSupabase({
-      interviewId,
+      interview_id,
       userId,
       feedback,
       completedAt,
@@ -159,14 +159,14 @@ function parseGeminiFeedback(generatedText: string): Feedback {
 }
 
 async function saveFeedbackToSupabase({ 
-  interviewId, 
+  interview_id, 
   userId, 
   feedback, 
   completedAt, 
   totalTime,
   interviewDetails 
 }: {
-  interviewId: string;
+  interview_id: string;
   userId: string;
   feedback: Feedback;
   completedAt: string;
@@ -177,7 +177,7 @@ async function saveFeedbackToSupabase({
     const { data: interviewData, error: fetchError } = await supabase
       .from('interviews')
       .select('attendees')
-      .eq('id', interviewId)
+      .eq('id', interview_id)
       .single();
 
     if (fetchError) {
@@ -195,7 +195,7 @@ async function saveFeedbackToSupabase({
     const { error: updateError } = await supabase
       .from('interviews')
       .update({ attendees: updatedAttendees })
-      .eq('id', interviewId);
+      .eq('id', interview_id);
 
     if (updateError) {
       console.error('Error updating interview attendees:', updateError);
@@ -205,7 +205,7 @@ async function saveFeedbackToSupabase({
     const { data, error } = await supabase
       .from('feedback')
       .insert({
-        id: interviewId,
+        interview_id: interview_id,
         user_id: userId,
         feedback: feedback,
         completed_at: completedAt,

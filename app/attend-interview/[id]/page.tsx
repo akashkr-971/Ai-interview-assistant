@@ -380,7 +380,6 @@ const AttendInterview: React.FC = () => {
     if (!interviewData) return;
   
     const results = {
-      interviewId: interviewData.id,
       questions: interviewData.questions,
       technicalAnswers: answersRef.current,
       questionsAndAnswers: interviewData.questions.map((question, index) => ({
@@ -396,7 +395,8 @@ const AttendInterview: React.FC = () => {
       },
       completedAt: new Date().toISOString(),
       userId: localStorage.getItem('userId') || '',
-      totalTime: interviewTime
+      totalTime: interviewTime,
+      interview_id:interviewData.id
     };
     
     console.log('Interview Results:', results);

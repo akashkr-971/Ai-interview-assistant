@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { supabase } from "@/lib/supabaseClient";
 
-// Updated Interview interface to match your actual data structure
 interface Interview {
   id: number;
   coverImage: string;
@@ -17,108 +16,107 @@ interface Interview {
   created_by: string;
 }
 
-interface InterviewCardProps {
-  filterType: "global" | "createdByUser" | "attended";
+interface Feedback {
+  id: number;
+  overallScore: number;
+  interview_id:number;
+  updated_at:string;
 }
 
-const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
+const AttendedInterviewCard: React.FC = () => {
   const [interviews, setInterviews] = useState<Interview[]>([]);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
-    console.log("Stored User ID:", storedUserId);
-    setUserId(storedUserId);
 
-    const fetchInterviews = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
-      let query = supabase.from("interviews").select("*");
 
-      if (filterType === "global") {
-      } else if (filterType === "createdByUser") {
-        if (storedUserId) {
-          query = query.eq("created_by", storedUserId);
-        } else {
-          setError("User not logged in to view created interviews.");
-          setLoading(false);
-          return;
-        }
-      } else if (filterType === "attended") {
-        if (storedUserId) {
-          // Fixed: Use @> operator for array contains check
-          query = query.contains("attendees", [storedUserId]);
-        } else {
-          setError("User not logged in to view attended interviews.");
-          setLoading(false);
-          return;
-        }
+      if (!storedUserId) {
+        setError("User not logged in to view attended interviews.");
+        setLoading(false);
+        return;
       }
 
-      query = query.order("created_at", { ascending: false });
+      const interviewQuery = supabase
+        .from("interviews")
+        .select("*")
+        .contains("attendees", [storedUserId])
+        .order("created_at", { ascending: false });
 
-      const { data, error: fetchError } = await query;
-
-      console.log("Fetched interviews:", data);
-
-      if (fetchError) {
-        console.error("Error fetching interviews:", fetchError.message);
-        setError(fetchError.message);
-        setInterviews([]);
-      } else if (data) {
-        setInterviews(data as Interview[]);
+        const feedbackQuery = supabase
+        .from("feedback")
+        .select("id, feedback, interview_id, updated_at")
+      
+      const [{ data: interviewData, error: interviewError }, { data: feedbackData, error: feedbackError }] =
+        await Promise.all([interviewQuery, feedbackQuery]);
+      
+      if (interviewError) {
+        setError(interviewError.message);
+        setLoading(false);
+        return;
       }
+
+      
+      if (feedbackError) {
+        console.error("Error fetching feedback:", feedbackError.message);
+      }
+      
+      // Map feedback JSON and extract overallScore inside the feedback JSON object
+      const parsedFeedbacks: Feedback[] = (feedbackData || []).map((item) => ({
+        id: item.id,
+        feedback: item.feedback, // full JSON object from DB
+        overallScore: item.feedback?.overallScore || null, // extract overallScore
+        interview_id:item.interview_id,
+        updated_at:item.updated_at
+      }));
+      
+      setInterviews(interviewData || []);
+      setFeedbacks(parsedFeedbacks);
       setLoading(false);
     };
 
-    fetchInterviews();
-  }, [filterType, userId]);
+    fetchData();
+  }, []);
 
-  if (loading) {
-    return <div className="text-center p-6">Loading interviews...</div>;
-  }
+  const getScoreForInterview = (interviewId: number) => {
+    const match = feedbacks.find(f => f.interview_id === interviewId);
+    return match ? match.overallScore : null;
+  };
 
-  if (error) {
-    return <div className="text-center p-6 text-red-600">Error: {error}</div>;
-  }
+  const getFeedbackId = (interviewId: number) => {
+    const match = feedbacks.find(f => f.interview_id === interviewId);
+    return match ? match.id : null;
+  };
 
-  if (interviews.length === 0) {
-    let content;
-  
-    if (filterType === "createdByUser") {
-      content = (
-        <>
-          <p>You haven&apos;t created any interviews yet.</p>
-          <p>Click the &apos;Create Interview&apos; button to get started.</p>
-          <button
-            onClick={() => (window.location.href = "/create-interview")}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4"
-          >
-            Create Interview
-          </button>
-        </>
-      );
-    } else if (filterType === "global") {
-      content = "No global interviews available.";
-    } else if (filterType === "attended") {
-      content = "You haven't attended any interviews yet.";
-    } else {
-      content = "No interviews found.";
+  const getUpdatedDate = (interviewId:number)=>{
+    let match = feedbacks.find(f => f.interview_id === interviewId);
+    if(match && match.updated_at){
+        const matchDate = new Date(match.updated_at).toLocaleDateString();
+        return matchDate;
     }
-  
-    return <div className="text-center p-6 text-gray-500">{content}</div>;
+    return null;
   }
+
+  if (loading) return <div className="text-center p-6">Loading interviews...</div>;
+  if (error) return <div className="text-center p-6 text-red-600">Error: {error}</div>;
+  if (interviews.length === 0) return <div className="text-center p-6 text-gray-500">You haven&apos;t attended any interviews yet.</div>;
 
   return (
     <div className="bg-white grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 p-6">
       {interviews.map((interview) => {
-        const created_date = new Date(interview.created_at).toLocaleDateString();
-        
+        const score = getScoreForInterview(interview.id);
+        const updated_at = getUpdatedDate(interview.id);
+        const feedbackId = getFeedbackId(interview.id);
+
         return (
-          <div key={interview.id} className="text-white p-6 border rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 min-h-[320px] flex flex-col justify-between" 
-          style={{ backgroundImage: `url(nightstar.jpg)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          <div key={interview.id} className="text-white p-6 border rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 min-h-[360px] flex flex-col justify-between"
+            style={{ backgroundImage: `url(nightstar.jpg)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+
             <div className="relative">
               <span className="absolute -top-4 -right-4 bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded">
                 {interview.type}
@@ -136,28 +134,26 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
               <p>{interview.coverImage}</p>
             </div>
 
-            
             <h3 className="text-xl font-bold">{interview.role}</h3>
             <p className="text-gray-300 font-semibold mb-2">
               {interview.level} • {interview.amount} questions
             </p>
-            
+
             <div className="flex flex-row items-center font-semibold justify-between mt-4 text-sm text-gray-400">
               <div className="flex items-center gap-1">
                 <Image src="/calendar.svg" width="20" height="20" alt="Calendar" />
-                <span>{created_date}</span>
+                <span>{updated_at}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Image src="/star.svg" width="20" height="20" alt="Score" />
-                <span>New</span>
+                <span>{score}/100</span>
               </div>
             </div>
 
-            {/* Technology Stack Display */}
+            {/* Tech stack icons */}
             <div className="flex items-center gap-6 mt-4">
               <div className="flex items-center relative">
                 {interview.techstack && interview.techstack.slice(0, 3).map((tech, index) => {
-                  // Map technology names to their respective icons
                   const techIcons: { [key: string]: string } = {
                     'React': '/Technology-cover/react.svg',
                     'Python': '/Technology-cover/python.svg',
@@ -179,9 +175,9 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
                     'PHP': '/Technology-cover/php.svg',
                     'Django': '/Technology-cover/django.svg',
                   };
-                  
+
                   const iconPath = techIcons[tech] || '/Technology-cover/default.svg';
-                  
+
                   return (
                     <Image
                       key={tech}
@@ -202,16 +198,24 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
               </div>
             </div>
 
-            {/* Action Button */}
-            <button 
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full mt-4"
-              onClick={() => {
-                console.log('View interview:', interview);
-                window.location.href = `/attend-interview/${interview.id}`;
-              }}
-            >
-              {filterType === "attended" ? "Retake Interview" : "Start Interview"}
-            </button>
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 mt-3 gap-2">
+              <button
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                onClick={() => window.location.href = `/attend-interview/${interview.id}`}
+              >
+                Retake Interview
+              </button>
+
+              {feedbackId && (
+                <button
+                  className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                  onClick={() => window.location.href = `/feedback/${feedbackId}`}
+                >
+                  View Feedback
+                </button>
+              )}
+            </div>
           </div>
         );
       })}
@@ -219,4 +223,4 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
   );
 };
 
-export default InterviewCard;
+export default AttendedInterviewCard;

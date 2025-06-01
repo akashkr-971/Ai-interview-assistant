@@ -50,8 +50,9 @@ export async function POST(request: Request) {
         
         Please correct and normalize these values and return ONLY a JSON object with keys matching the input fields. Do not include any explanatory text, conversation, or formatting - just the raw JSON object.
 
-        convert the amount into a number if it is a string, and ensure it is a valid integer.if u cant recognize the amount, set it to 5.
-
+        convert the amount into a number if it is a string, and ensure it is a valid integer.if u cant recognize the amount, set it to 3.
+        Ensure that if the number is recognized, make sure it is converted 
+        
         The levels are entery-level, mid-level, and senior-level.
 
         The types are technical, behavioral, and mixed. select the one that matches closest to the input.
@@ -99,21 +100,21 @@ export async function POST(request: Request) {
       
 
         Requirements:
-        1. **Start with 2-3 introductory questions** to warm up the candidate. These should be casual and ask about their background, interests, or goals.Also add a welcome message like welcome to the company if the name is default say welcome to the interview.
+        1. **Start with 1-2 introductory questions** to warm up the candidate. These should be casual and ask about their background, interests, or goals.Also add a welcome message like welcome to the company if the name is default say welcome to the interview.
         2. **Then generate exactly ${normAmount} core technical interview questions**. These must match:
           - Experience level: ${normLevel}
           - Interview type: ${normType}
           - Tech stack: ${normTechstack}
           - Focus: ${normType}
           - Company: ${normCompany}
-        3. **End with 1-2 wrap-up questions** (e.g., “Do you have any questions for us?” or “Where do you see yourself in the next few years?”)
+        3. **End with 1-2 wrap-up questions**
 
         🔒 Constraints:
         - Return ONLY a valid JSON array of strings.
         - Each question must be a single line.
         - Escape quotes and apostrophes properly.
         - Do NOT include any extra text, explanation, or formatting.
-        - The final array will include ~(${normAmount} + ~3 to 5) total questions.
+        - The final array will include ~(${normAmount} + ~1 to 3) total questions.
 
         ✅ Example:
         [

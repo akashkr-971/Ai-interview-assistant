@@ -5,7 +5,6 @@ import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import Navbar from '../../components/navbar';
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -48,7 +47,6 @@ const FeedbackPage: React.FC = () => {
 
   useEffect(() => {
     const fetchFeedback = async () => {
-      // Get the interview ID from the dynamic route parameter
       const interviewId = params.id as string;
       
       if (!interviewId) {
@@ -62,7 +60,7 @@ const FeedbackPage: React.FC = () => {
         const { data, error: supabaseError } = await supabase
           .from('feedback')
           .select('*')
-          .eq('interview_id', interviewId)
+          .eq('id', interviewId)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
@@ -149,7 +147,7 @@ const FeedbackPage: React.FC = () => {
             <h2 className="text-xl font-semibold text-red-400 mb-2">Error Loading Feedback</h2>
             <p className="text-gray-300 mb-4">{error}</p>
             <button
-              onClick={() => router.push('/interviews')}
+              onClick={() => router.push('/')}
               className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-500 transition"
             >
               Back to Interviews
