@@ -8,14 +8,32 @@ import ProductModal from './product'
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [coins,setCoins]= useState(0);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (userId) {
-      setIsLoggedIn(true);
-    }
+    const fetchUserData = async () => {
+      const userId = localStorage.getItem("userId");
+      if (userId) {
+        setIsLoggedIn(true);
+  
+        const { data, error } = await supabase
+          .from("users")
+          .select("coins")
+          .eq("id", userId)
+          .single(); // since we're expecting only one row
+  
+        if (error) {
+          console.error("Failed to fetch coins:", error);
+        } else {
+          setCoins(data.coins || 0);
+        }
+      }
+    };
+  
+    fetchUserData();
   }, []);
+  
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -64,7 +82,7 @@ const Navbar = () => {
                 >
                   <div className="bg-orange-500 rounded-full p-2 flex items-center justify-center text-white font-bold text-base min-w-[120px] shadow-lg transition-transform duration-200 group-hover:scale-105">
                     <Image src="/coin.svg" alt="Coin" width={22} height={22} className='mr-2' />
-                    <span>5 Coins</span>
+                    <span>{coins} Coins</span>
                     <span className='ml-2 text-xl'>+</span>
                   </div>
                 </button>
@@ -91,7 +109,7 @@ const Navbar = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="bg-black bg-opacity-60 backdrop-blur-sm fixed inset-0 flex items-center justify-center z-50 animate-fade-in">
+        <div className="backdrop-blur-xl fixed inset-0 flex items-center justify-center z-50 animate-fade-in">
           <ProductModal onClose={() => setShowModal(false)} />
         </div>
       )}

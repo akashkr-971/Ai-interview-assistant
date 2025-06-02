@@ -1,73 +1,59 @@
 "use client";
-import React, { useState, useRef } from "react";
-import Navbar from "../components/navbar"; // Assuming these components exist
-import Footer from "../components/footer"; // Assuming these components exist
-import { FaEdit, FaLinkedin, FaPhone, FaMapMarkerAlt, FaEnvelope, FaUpload, FaFileAlt, FaCamera } from 'react-icons/fa';
+import React, { useState, useRef, useEffect } from "react";
+import Navbar from "../components/navbar";
+import Footer from "../components/footer";
+import { FaEdit, FaLinkedin, FaPhone, FaMapMarkerAlt, FaEnvelope, FaUpload, FaFileAlt, FaCamera, FaSpinner } from 'react-icons/fa';
 import { AiOutlineCloseCircle, AiOutlinePlusCircle } from 'react-icons/ai';
 import Image from "next/image";
+import { supabase } from "@/lib/supabaseClient";
 
-// Define the core user data structure
 interface UserData {
+    id?: string;
     name: string;
     email: string;
     role: string;
     joined: string;
     avatar: string;
-    bio: string;
-    linkedin: string;
-    phone: string;
-    location: string;
-    resume: string;
     stats: {
-        interviewsCompleted: number;
-        interviewsScheduled: number;
+        interviewsCreated: number;
+        interviewsAttended: number;
         successRate: number;
         progress: number[];
     };
     skills: string[];
 }
 
-// Initial dummy data for the user profile
-const initialUserData: UserData = {
-    name: "Jane Doe",
-    email: "jane.doe@email.com",
-    role: "Software Engineer",
-    joined: "2023-01-15",
-    avatar: "https://i.pravatar.cc/150?img=47",
-    bio: "Passionate about AI and web development. Loves to solve problems and build amazing products.",
-    linkedin: "https://linkedin.com/in/janedoe",
-    phone: "+1 234 567 8901",
-    location: "San Francisco, CA",
-    resume: "Jane_Doe_Resume.pdf", // Example resume file name
+const defaultUserData: UserData = {
+    name: "",
+    email: "",
+    role: "",
+    joined: new Date().toISOString().split('T')[0],
+    avatar: "/avatar.jpg",
     stats: {
-        interviewsCompleted: 12,
-        interviewsScheduled: 3,
-        successRate: 83,
-        progress: [60, 70, 80, 90, 83], // Progress over 5 months
+        interviewsCreated: 0,
+        interviewsAttended: 0,
+        successRate: 0,
+        progress: [0, 0, 0, 0, 0],
     },
-    skills: ["React", "TypeScript", "Node.js", "AI", "UI/UX"],
+    skills: [],
 };
 
-// Component to render the progress line graph
 const ProgressGraph: React.FC<{ data: number[] }> = ({ data }) => {
-    const width = 400; // Fixed width for the SVG
-    const height = 120; // Fixed height for the SVG
-    const padding = 20; // Padding around the graph
+    const width = 400;
+    const height = 120;
+    const padding = 20;
     const maxDataValue = Math.max(...data, 100);
     const minDataValue = Math.min(...data, 0);
 
-    // Calculate scaling factors
     const xScale = (index: number) => padding + (index / (data.length - 1)) * (width - 2 * padding);
     const yScale = (value: number) => height - padding - ((value - minDataValue) / (maxDataValue - minDataValue || 1)) * (height - 2 * padding);
 
-    // Generate path for the line graph
     const linePath = data.map((val, i) => `${xScale(i)},${yScale(val)}`).join("L");
     const dAttr = `M${linePath}`;
 
     return (
         <div className="mt-4 mb-4 pb-4 overflow-x-auto">
             <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
-                {/* Y-axis labels (simplified) */}
                 <text x={padding - 5} y={yScale(maxDataValue) + 5} textAnchor="middle" className="text-xs fill-gray-500">
                     {maxDataValue}%
                 </text>
@@ -75,7 +61,6 @@ const ProgressGraph: React.FC<{ data: number[] }> = ({ data }) => {
                     {minDataValue}%
                 </text>
 
-                {/* X-axis labels (months) */}
                 {data.map((_, i) => (
                     <text
                         key={`x-label-${i}`}
@@ -83,20 +68,17 @@ const ProgressGraph: React.FC<{ data: number[] }> = ({ data }) => {
                         y={height - padding + 15}
                         textAnchor="middle"
                         className="text-xs fill-gray-600 font-semiboldc mt-2"
-                        style={{ fontSize: "10px" }} // Adjust font size for better visibility
+                        style={{ fontSize: "10px" }}
                     >
                         Month {i + 1}
                     </text>
                 ))}
 
-                {/* Horizontal lines for guidance */}
                 <line x1={padding} y1={yScale(maxDataValue)} x2={width - padding} y2={yScale(maxDataValue)} stroke="#e5e7eb" strokeDasharray="4 2" />
                 <line x1={padding} y1={yScale(minDataValue)} x2={width - padding} y2={yScale(minDataValue)} stroke="#e5e7eb" strokeDasharray="4 2" />
 
-                {/* The line itself */}
                 <path d={dAttr} fill="none" stroke="#3b82f6" strokeWidth="3" />
 
-                {/* Data points */}
                 {data.map((val, i) => (
                     <g key={i}>
                         <circle
@@ -120,7 +102,6 @@ const ProgressGraph: React.FC<{ data: number[] }> = ({ data }) => {
                                 if (tooltip) tooltip.style.display = "none";
                             }}
                         />
-                        {/* Tooltip */}
                         <foreignObject
                             id={`progress-tooltip-${i}`}
                             x={xScale(i) - 15}
@@ -143,85 +124,262 @@ const ProgressGraph: React.FC<{ data: number[] }> = ({ data }) => {
     );
 };
 
-// Main Profile Page Component
 const ProfilePage: React.FC = () => {
-    // State to toggle between view and edit modes
     const [editing, setEditing] = useState(false);
-    // State to hold and manage user data
-    const [user, setUser] = useState<UserData>(initialUserData);
-    // State for adding new skills
+    const [user, setUser] = useState<UserData>(defaultUserData);
+    const [originalUser, setOriginalUser] = useState<UserData>(defaultUserData);
     const [newSkill, setNewSkill] = useState("");
-    // Ref for the hidden file input
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Handle changes to input fields (name, email, role, etc.)
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
+    const fetchUserData = async () => {
+        try {
+            setLoading(true);
+            const userId = localStorage.getItem("userId");
+            if (!userId) {
+                console.error("No user ID found in localStorage");
+                setLoading(false);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from("users")
+                .select("*")
+                .eq("id", userId)
+                .single();
+
+            if (error) {
+                console.error("Failed to fetch user data:", error);
+                setLoading(false);
+                return;
+            }
+            if(data){
+
+                const {data:interview_data , error:interview_error } = await supabase
+                .from("interviews")
+                .select("*")
+                .eq("created_by", [userId]);
+                
+                if(interview_error){
+                    console.error("Failed to fetch interview data:", error);
+                    setLoading(false);
+                    return;
+                }
+                if(interview_data){
+                    const interviews = interview_data || [];
+                    const roleCount: { [key: string]: number } = {};
+                    const userSkillsSet = new Set<string>();
+                    let dominantRole:string='';
+                    let maxCount = 0;
+                    let attendedCount=0;
+    
+                    interviews.forEach((interview) => {
+                        const role = interview.role.trim();
+                        roleCount[role] = (roleCount[role] || 0) + 1;
+                        interview.techstack.forEach((tech:string) => userSkillsSet.add(tech.trim()));
+                        if (interview.attendees?.includes(userId)) {
+                            attendedCount++;
+                        }
+                    })
+                    const techstacks = Array.from(new Set(userSkillsSet));
+                    for (const role in roleCount) {
+                        if (roleCount[role] > maxCount) {
+                          dominantRole = role;
+                          maxCount = roleCount[role];
+                        }
+                      }
+    
+                      const stats = {
+                        interviewsCreated: interviews.length,
+                        interviewsAttended: attendedCount,
+                        successRate: (interviews.filter((interview) => interview.status === "Completed").length / interviews.length) * 100,
+                        progress: [0, 0, 0, 0, 0],
+                      }
+    
+                    const userData: UserData = {
+                        ...data,
+                        joined: data.craeted_at || defaultUserData.joined,
+                        role: dominantRole,
+                        stats: stats || defaultUserData.stats,
+                        skills: techstacks || [],
+                        avatar: data.avatar || defaultUserData.avatar,
+                    };
+        
+                    setUser(userData);
+                    setOriginalUser(userData);
+                }
+
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const saveUserData = async () => {
+        try {
+            setSaving(true);
+            const userId = localStorage.getItem("userId");
+            if (!userId) return;
+
+            const updateData = {
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                stats: JSON.stringify(user.stats),
+                skills: JSON.stringify(user.skills),
+                avatar: user.avatar,
+            };
+
+            const { error } = await supabase
+                .from("users")
+                .update(updateData)
+                .eq("id", userId);
+
+            if (error) {
+                console.error("Failed to save user data:", error);
+                alert("Failed to save changes. Please try again.");
+                return;
+            }
+
+            setOriginalUser(user);
+            setEditing(false);
+            alert("Profile updated successfully!");
+        } catch (error) {
+            console.error("Error saving user data:", error);
+            alert("Failed to save changes. Please try again.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const uploadFileToSupabase = async (file: File, bucket: string, path: string) => {
+        const { data, error } = await supabase.storage
+            .from(bucket)
+            .upload(path, file, {
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (error) {
+            throw error;
+        }
+
+        const { data: urlData } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(path);
+
+        return urlData.publicUrl;
+    };
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const userId = localStorage.getItem("userId");
+            
+            if (!userId) return;
+
+            try {
+                setUploadingAvatar(true);
+                const fileName = `${userId}_${Date.now()}_${file.name}`;
+                const filePath = `avatars/${fileName}`;
+                
+                const publicUrl = await uploadFileToSupabase(file, 'images', filePath);
+                
+                setUser({ ...user, avatar: publicUrl });
+                
+                alert("Profile picture updated successfully!");
+            } catch (error) {
+                console.error("Error uploading avatar:", error);
+                alert("Failed to upload profile picture. Please try again.");
+            } finally {
+                setUploadingAvatar(false);
+            }
+        }
+    };
+
+    
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setUser({ ...user, [e.target.name]: e.target.value });
     };
 
-    // Add a new skill to the user's skill list
     const handleSkillAdd = () => {
         if (newSkill.trim() && !user.skills.includes(newSkill.trim())) {
             setUser({ ...user, skills: [...user.skills, newSkill.trim()] });
-            setNewSkill(""); // Clear input after adding
+            setNewSkill("");
         }
     };
 
-    // Remove an existing skill from the user's skill list
     const handleSkillRemove = (skill: string) => {
         setUser({ ...user, skills: user.skills.filter(s => s !== skill) });
     };
 
-    // Handle resume file upload
-    const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setUser({ ...user, resume: e.target.files[0].name }); // Store only the file name
-        }
+    const handleCancel = () => {
+        setUser(originalUser);
+        setEditing(false);
+        setNewSkill("");
     };
 
-    // Handle avatar image upload
-    const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (event.target?.result) {
-                    setUser({ ...user, avatar: event.target.result as string });
-                }
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        }
-    };
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col bg-gray-100">
+                <Navbar />
+                <main className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                        <FaSpinner className="animate-spin text-4xl text-blue-500 mx-auto mb-4" />
+                        <p className="text-xl text-gray-600">Loading profile...</p>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-100">
-            <Navbar /> {/* Navigation Bar */}
+            <Navbar />
             <main className="flex-1 max-w-4xl mx-auto p-8 bg-white rounded-xl shadow-lg my-10 border border-gray-200">
                 {/* Profile Header Section */}
-                <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8 pb-6 border-b border-gray-200">
+                <div className="flex flex-col justify-center  md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8 pb-6 border-b border-gray-200">
                     <div className="relative w-32 h-32">
                         <Image
+                            height={128}
+                            width={128}
                             src={user.avatar}
+                            priority
                             alt="User Avatar"
                             className="w-full h-full rounded-full border-4 border-blue-400 shadow-md object-cover"
                         />
                         {editing && (
                             <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 cursor-pointer shadow-lg hover:bg-blue-600 transition-colors"
-                                 onClick={() => fileInputRef.current?.click()} // Trigger hidden file input
+                                 onClick={() => fileInputRef.current?.click()}
                             >
-                                <FaCamera className="text-white text-lg" />
+                                {uploadingAvatar ? (
+                                    <FaSpinner className="animate-spin text-white text-lg" />
+                                ) : (
+                                    <FaCamera className="text-white text-lg" />
+                                )}
                                 <input
                                     type="file"
                                     accept="image/*"
                                     onChange={handleAvatarUpload}
                                     className="hidden"
                                     ref={fileInputRef}
+                                    disabled={uploadingAvatar}
                                 />
                             </div>
                         )}
                     </div>
                     <div className="text-center md:text-left">
                         {editing ? (
-                            // Edit mode for Name and Role
                             <>
                                 <input
                                     className="text-4xl font-extrabold text-gray-900 border-b-2 border-blue-300 focus:outline-none px-2 py-1 rounded-md"
@@ -237,45 +395,23 @@ const ProfilePage: React.FC = () => {
                                 />
                             </>
                         ) : (
-                            // View mode for Name and Role
                             <>
                                 <h1 className="text-4xl font-extrabold text-gray-900">{user.name}</h1>
                                 <p className="text-xl text-gray-700 mt-2">{user.role}</p>
                             </>
                         )}
                         <p className="text-base text-gray-500 mt-2">Joined: {user.joined}</p>
-                        <div className="flex justify-center md:justify-start space-x-4 mt-4">
-                            {editing ? (
-                                // Edit mode for LinkedIn
-                                <input
-                                    className="text-blue-600 hover:underline flex items-center border-b border-gray-300 focus:outline-none text-sm"
-                                    name="linkedin"
-                                    value={user.linkedin}
-                                    onChange={handleChange}
-                                    placeholder="LinkedIn URL"
-                                />
-                            ) : (
-                                // View mode for LinkedIn
-                                <a
-                                    href={user.linkedin}
-                                    className="text-blue-600 hover:underline flex items-center text-lg"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <FaLinkedin className="mr-2 text-blue-700" /> LinkedIn
-                                </a>
-                            )}
-                        </div>
                     </div>
                 </div>
 
-                {/* Contact and Bio Section */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                     <section>
-                        <h2 className="font-bold text-2xl text-gray-800 mb-4 flex items-center"><FaEnvelope className="mr-3 text-blue-500" /> Contact Information</h2>
+                        <h2 className="font-bold text-2xl text-gray-800 mb-4 flex items-center">
+                            <FaEnvelope className="mr-3 text-blue-500" /> Contact Information
+                        </h2>
                         <div className="space-y-3 text-gray-700 text-lg">
                             <div className="flex items-center">
-                                <span className="font-semibold w-24">Email:</span>{" "}
+                                <span className="font-semibold w-24">Email:</span>
                                 {editing ? (
                                     <input
                                         className="border-b border-gray-300 focus:outline-none flex-1 p-1 rounded"
@@ -288,83 +424,10 @@ const ProfilePage: React.FC = () => {
                                     <a href={`mailto:${user.email}`} className="text-blue-600 hover:underline">{user.email}</a>
                                 )}
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-semibold w-24">Phone:</span>{" "}
-                                {editing ? (
-                                    <input
-                                        className="border-b border-gray-300 focus:outline-none flex-1 p-1 rounded"
-                                        name="phone"
-                                        type="tel"
-                                        value={user.phone}
-                                        onChange={handleChange}
-                                    />
-                                ) : (
-                                    <span className="flex items-center"><FaPhone className="mr-2 text-green-500" />{user.phone}</span>
-                                )}
-                            </div>
-                            <div className="flex items-center">
-                                <span className="font-semibold w-24">Location:</span>{" "}
-                                {editing ? (
-                                    <input
-                                        className="border-b border-gray-300 focus:outline-none flex-1 p-1 rounded"
-                                        name="location"
-                                        value={user.location}
-                                        onChange={handleChange}
-                                    />
-                                ) : (
-                                    <span className="flex items-center"><FaMapMarkerAlt className="mr-2 text-red-500" />{user.location}</span>
-                                )}
-                            </div>
-                            <div className="flex items-center">
-                                <span className="font-semibold w-24">Resume:</span>{" "}
-                                {editing ? (
-                                    <div className="flex items-center flex-1">
-                                        <input
-                                            type="file"
-                                            accept=".pdf,.doc,.docx"
-                                            onChange={handleResumeUpload}
-                                            className="hidden"
-                                            id="resume-upload"
-                                        />
-                                        <label htmlFor="resume-upload" className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center text-sm">
-                                            <FaUpload className="mr-2" /> Upload Resume
-                                        </label>
-                                        {user.resume && (
-                                            <span className="ml-3 text-sm text-gray-600 font-medium">{user.resume}</span>
-                                        )}
-                                    </div>
-                                ) : (
-                                    user.resume ? (
-                                        <a href={`/path/to/resumes/${user.resume}`} download className="text-green-600 hover:underline flex items-center text-lg">
-                                            <FaFileAlt className="mr-2" /> Download {user.resume}
-                                        </a>
-                                    ) : (
-                                        <span className="text-gray-500 italic">No resume uploaded</span>
-                                    )
-                                )}
-                            </div>
                         </div>
                     </section>
-                    <section>
-                        <h2 className="font-bold text-2xl text-gray-800 mb-4">Bio</h2>
-                        {editing ? (
-                            <textarea
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-400 focus:border-transparent text-lg"
-                                name="bio"
-                                value={user.bio}
-                                onChange={handleChange}
-                                rows={6}
-                                placeholder="Tell us about yourself..."
-                            />
-                        ) : (
-                            <p className="text-gray-800 leading-relaxed text-lg">{user.bio}</p>
-                        )}
-                    </section>
                 </div>
-
-                {/* --- */}
                 <hr className="my-8 border-gray-200" />
-
                 {/* Skills Section */}
                 <section className="mt-8">
                     <h2 className="font-bold text-2xl text-gray-800 mb-4 flex items-center">
@@ -409,7 +472,6 @@ const ProfilePage: React.FC = () => {
                     )}
                 </section>
 
-                {/* --- */}
                 <hr className="my-8 border-gray-200" />
 
                 {/* Interview Progress & Stats Section */}
@@ -419,12 +481,12 @@ const ProfilePage: React.FC = () => {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                         <div className="bg-blue-50 p-5 rounded-lg shadow-sm border border-blue-200">
-                            <p className="text-4xl font-extrabold text-blue-700">{user.stats.interviewsCompleted}</p>
-                            <p className="text-gray-600 text-lg mt-2">Interviews Completed</p>
+                            <p className="text-4xl font-extrabold text-blue-700">{user.stats.interviewsCreated}</p>
+                            <p className="text-gray-600 text-lg mt-2">Interviews Created</p>
                         </div>
                         <div className="bg-yellow-50 p-5 rounded-lg shadow-sm border border-yellow-200">
-                            <p className="text-4xl font-extrabold text-yellow-700">{user.stats.interviewsScheduled}</p>
-                            <p className="text-gray-600 text-lg mt-2">Interviews Scheduled</p>
+                            <p className="text-4xl font-extrabold text-yellow-700">{user.stats.interviewsAttended}</p>
+                            <p className="text-gray-600 text-lg mt-2">Interviews Attended</p>
                         </div>
                         <div className="bg-green-50 p-5 rounded-lg shadow-sm border border-green-200">
                             <p className="text-4xl font-extrabold text-green-700">{user.stats.successRate}%</p>
@@ -435,21 +497,18 @@ const ProfilePage: React.FC = () => {
                         <h3 className="font-semibold text-xl text-gray-800 mb-3">Progress Insights for past 5 Months</h3>
                         <ProgressGraph data={user.stats.progress} />
                         <div className="flex flex-wrap justify-center gap-6 mt-4 font-semibold text-gray-700">
-                            {/* Highest */}
                             <div className="flex flex-col items-center">
                                 <span className="text-green-700 font-bold text-xl">
                                     {Math.max(...user.stats.progress)}%
                                 </span>
                                 <span className="text-xs text-gray-500">Highest</span>
                             </div>
-                            {/* Lowest */}
                             <div className="flex flex-col items-center">
                                 <span className="text-red-600 font-bold text-xl">
                                     {Math.min(...user.stats.progress)}%
                                 </span>
                                 <span className="text-xs text-gray-500">Lowest</span>
                             </div>
-                            {/* Average */}
                             <div className="flex flex-col items-center">
                                 <span className="text-blue-700 font-bold text-xl">
                                     {(
@@ -460,7 +519,6 @@ const ProfilePage: React.FC = () => {
                                 </span>
                                 <span className="text-xs text-gray-500">Average</span>
                             </div>
-                            {/* Trend */}
                             <div className="flex flex-col items-center ">
                                 <span className={`font-bold text-xl ${
                                     user.stats.progress[user.stats.progress.length - 1] > user.stats.progress[0]
@@ -489,19 +547,23 @@ const ProfilePage: React.FC = () => {
                     {editing ? (
                         <>
                             <button
-                                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-md text-lg"
-                                onClick={() => setEditing(false)}
+                                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-md text-lg disabled:opacity-50"
+                                onClick={saveUserData}
                                 type="button"
+                                disabled={saving}
                             >
-                                <FaEdit className="inline mr-2" /> Save Changes
+                                {saving ? (
+                                    <FaSpinner className="inline animate-spin mr-2" />
+                                ) : (
+                                    <FaEdit className="inline mr-2" />
+                                )}
+                                {saving ? "Saving..." : "Save Changes"}
                             </button>
                             <button
                                 className="px-6 py-3 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition-colors shadow-md text-lg"
-                                onClick={() => {
-                                    setEditing(false);
-                                    setUser(initialUserData); // Revert to initial data on cancel
-                                }}
+                                onClick={handleCancel}
                                 type="button"
+                                disabled={saving}
                             >
                                 Cancel
                             </button>
@@ -517,7 +579,7 @@ const ProfilePage: React.FC = () => {
                     )}
                 </div>
             </main>
-            <Footer /> {/* Footer component */}
+            <Footer />
         </div>
     );
 };

@@ -8,17 +8,19 @@ export default function About() {
         <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
             <Navbar />
             <main className="flex-1 container mx-auto px-6 py-12">
+                <h1 className="text-5xl font-extrabold text-center text-indigo-800 mb-6">About PrepWise</h1>
                 <div className="flex flex-col md:flex-row items-center gap-12">
                     <div className="md:w-1/2 flex justify-center">
                         <Image
                             src="/logo.webp"
+                            width={500}
+                            height={500}
                             alt="AI Interview Helper"
                             className="rounded-xl shadow-lg w-full max-w-md transition-transform duration-500 hover:scale-105 animate-fade-in"
                             style={{ animation: 'fadeInUp 1s ease' }}
                         />
                     </div>
                     <div className="md:w-1/2">
-                        <h1 className="text-5xl font-extrabold text-indigo-800 mb-6">About PrepWise</h1>
                         <p className="text-xl text-gray-700 mb-6">
                             <span className="font-semibold">PrepWise</span> is your smart companion for interview preparation. Leveraging the power of AI, our platform generates tailored questions for various job roles and industries, helping you practice and improve your skills.
                         </p>
@@ -40,9 +42,6 @@ export default function About() {
                         </li>
                         <li>
                             <span className="font-semibold text-indigo-600">Up-to-date Content:</span> Access a regularly updated question bank reflecting the latest industry trends.
-                        </li>
-                        <li>
-                            <span className="font-semibold text-indigo-600">Community & Support:</span> Connect with a supportive community and receive expert interview tips.
                         </li>
                         <li>
                             <span className="font-semibold text-indigo-600">Insightful Analytics:</span> Track your progress with detailed analytics to identify strengths and areas for growth.

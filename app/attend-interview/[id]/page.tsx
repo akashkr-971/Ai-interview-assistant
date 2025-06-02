@@ -418,7 +418,7 @@ const AttendInterview: React.FC = () => {
       const feedbackResponse = await response.json();
       
       if (feedbackResponse.success && feedbackResponse.feedback) {
-        router.push(`/feedback/${interviewData.id}`);
+        router.push(`/feedback/${feedbackResponse.feedbackId}`);
       } else {
         throw new Error('Invalid response from feedback API');
       }
@@ -534,6 +534,8 @@ const AttendInterview: React.FC = () => {
             {lastMessage || `Welcome! Ready to start your ${interviewData.type.toLowerCase()} interview for ${interviewData.role}?`}
           </p>
         </div>
+
+        <p>*If the question is not asked automatically by the interviewer, please click on the "Next Question" button.*</p>
 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
           <button

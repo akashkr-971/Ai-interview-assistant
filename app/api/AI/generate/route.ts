@@ -50,7 +50,8 @@ export async function POST(request: Request) {
         
         Please correct and normalize these values and return ONLY a JSON object with keys matching the input fields. Do not include any explanatory text, conversation, or formatting - just the raw JSON object.
 
-        convert the amount into a number if it is a string, and ensure it is a valid integer.if u cant recognize the amount, set it to 3.
+        convert the amount into a number, and ensure it is a valid integer.Remove other words and i only need the number.If no input is provided then set it to 3.
+        If a input is provided convert it
         Ensure that if the number is recognized, make sure it is converted 
         
         The levels are entery-level, mid-level, and senior-level.

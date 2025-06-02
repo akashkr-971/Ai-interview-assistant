@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
     });
 
     const {
+      id,
       interview_id,
       questionsAndAnswers,
       interviewDetails,
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     const savedFeedback = await saveFeedbackToSupabase({
+      id,
       interview_id,
       userId,
       feedback,
@@ -72,7 +74,8 @@ export async function POST(request: NextRequest) {
         success: true, 
         feedback, 
         savedFeedbackId: savedFeedback?.id,
-        interviewId: savedFeedback?.interview_id 
+        interviewId: savedFeedback?.interview_id,
+        feedbackId: savedFeedback?.id
       }),
       { status: 200 }
     );
@@ -159,6 +162,7 @@ function parseGeminiFeedback(generatedText: string): Feedback {
 }
 
 async function saveFeedbackToSupabase({ 
+  id,
   interview_id, 
   userId, 
   feedback, 
@@ -166,6 +170,7 @@ async function saveFeedbackToSupabase({
   totalTime,
   interviewDetails 
 }: {
+  id: string;
   interview_id: string;
   userId: string;
   feedback: Feedback;
@@ -185,13 +190,11 @@ async function saveFeedbackToSupabase({
       throw new Error(`Failed to fetch interview: ${fetchError.message}`);
     }
 
-    // Update attendees array (avoid duplicates)
     const currentAttendees = interviewData?.attendees || [];
     const updatedAttendees = currentAttendees.includes(userId) 
       ? currentAttendees 
       : [...currentAttendees, userId];
 
-    // Update the interviews table with the new attendee
     const { error: updateError } = await supabase
       .from('interviews')
       .update({ attendees: updatedAttendees })
