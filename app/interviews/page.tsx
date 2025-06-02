@@ -1,17 +1,10 @@
-'use client';
+import React, { Suspense } from 'react';
+import Interview from './interview';
 
-import { useSearchParams } from 'next/navigation';
-import React from 'react';
-
-const Interview = () => {
-  const searchParams = useSearchParams();
-  const type = searchParams.get('type');
-
+export default function InterviewsPage() {
   return (
-    <div className="p-4 text-xl font-semibold text-gray-800">
-      Page Type: {type}
-    </div>
+    <Suspense fallback={<div>Loading...</div>}>
+      <Interview />
+    </Suspense>
   );
-};
-
-export default Interview;
+}
