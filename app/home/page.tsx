@@ -8,7 +8,6 @@ import Hero from '../components/hero'
 import InterviewCard from '../components/interviewcard'
 import Testimonial from '../components/testimonial'
 import AttendedInterviewCard from '../components/attendedcard'
-import Interview from '../interviews/page'
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

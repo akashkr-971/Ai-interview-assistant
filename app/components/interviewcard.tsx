@@ -62,8 +62,7 @@ const InterviewCard: React.FC = () => {
   }
 
   if (interviews.length === 0) {
-    let content;
-      content = (
+    const content = (
         <>
           <p>You haven&apos;t created any interviews yet.</p>
           <p>Click the &apos;Create Interview&apos; button to get started.</p>

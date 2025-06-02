@@ -127,7 +127,6 @@ const ProfilePage: React.FC = () => {
     const [editing, setEditing] = useState(false);
     const [user, setUser] = useState<UserData>(defaultUserData);
     const [originalUser, setOriginalUser] = useState<UserData>(defaultUserData);
-    const [newSkill, setNewSkill] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -276,7 +275,7 @@ const ProfilePage: React.FC = () => {
     };
 
     const uploadFileToSupabase = async (file: File, bucket: string, path: string) => {
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
             .from(bucket)
             .upload(path, file, {
                 cacheControl: '3600',
@@ -329,7 +328,6 @@ const ProfilePage: React.FC = () => {
     const handleCancel = () => {
         setUser(originalUser);
         setEditing(false);
-        setNewSkill("");
     };
 
     if (loading) {

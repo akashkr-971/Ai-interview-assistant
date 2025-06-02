@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
     });
 
     const {
-      id,
       interview_id,
       questionsAndAnswers,
       interviewDetails,

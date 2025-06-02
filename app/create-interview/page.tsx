@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { cn } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
 import { supabase } from "@/lib/supabaseClient";
-import ProductModal from '../components/product';
 
 declare global {
   interface Window {
