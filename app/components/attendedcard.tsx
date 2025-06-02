@@ -107,7 +107,7 @@ const AttendedInterviewCard: React.FC = () => {
   if (interviews.length === 0) return <div className="text-center p-6 text-gray-500">You haven&apos;t attended any interviews yet.</div>;
 
   return (
-    <div className="bg-white grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 p-6">
+    <div className="bg-white grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 p-6">
       {interviews.map((interview) => {
         const score = getScoreForInterview(interview.id);
         const updated_at = getUpdatedDate(interview.id);
@@ -136,7 +136,7 @@ const AttendedInterviewCard: React.FC = () => {
 
             <h3 className="text-xl font-bold">{interview.role}</h3>
             <p className="text-gray-300 font-semibold mb-2">
-              {interview.level} • {interview.amount} questions
+              {interview.level} • {interview.questions.length} questions
             </p>
 
             <div className="flex flex-row items-center font-semibold justify-between mt-4 text-sm text-gray-400">

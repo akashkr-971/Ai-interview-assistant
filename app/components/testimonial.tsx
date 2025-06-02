@@ -50,6 +50,8 @@ export default function Testimonial() {
         `)
         .order("created_at", { ascending: false });
 
+        console.log(data);
+
       if (fetchError) {
         throw fetchError;
       }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from "@/lib/supabaseClient";
+import Image from 'next/image'
 
 interface CoinProduct {
   id: string
@@ -132,7 +133,7 @@ export default function ProductModal({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <div className="text-center mb-4 sm:mb-6">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full mx-auto mb-2 sm:mb-3 flex items-center justify-center">
-            <img src="/coin.svg" alt="Coin" className="w-5 h-5 sm:w-6 sm:h-6" />
+            <Image height={25} width={25} src="/coin.svg" alt="Coin" className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Buy Coins</h2>
           <p className="text-xs sm:text-sm text-gray-600">Get more coins to generate interviews</p>
@@ -163,7 +164,7 @@ export default function ProductModal({ onClose }: { onClose: () => void }) {
                 )}
                 
                 <div className="text-center">
-                  <img src="/coin.svg" alt="Coin" className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1 sm:mb-2" />
+                  <Image height={50} width={50} src="/coin.svg" alt="Coin" className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1 sm:mb-2" />
                   <div className="font-semibold text-gray-800 text-sm sm:text-base">{product.label}</div>
                   <div className="text-base sm:text-lg font-bold text-gray-900">₹{product.price}</div>
                   <div className="text-xs text-gray-500">₹{Math.round(product.price / product.coins)} per coin</div>

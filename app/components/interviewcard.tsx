@@ -17,11 +17,8 @@ interface Interview {
   created_by: string;
 }
 
-interface InterviewCardProps {
-  filterType: "global" | "createdByUser" | "attended";
-}
 
-const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
+const InterviewCard: React.FC = () => {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,27 +32,7 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
     const fetchInterviews = async () => {
       setLoading(true);
       setError(null);
-      let query = supabase.from("interviews").select("*");
-
-      if (filterType === "global") {
-      } else if (filterType === "createdByUser") {
-        if (storedUserId) {
-          query = query.eq("created_by", storedUserId);
-        } else {
-          setError("User not logged in to view created interviews.");
-          setLoading(false);
-          return;
-        }
-      } else if (filterType === "attended") {
-        if (storedUserId) {
-          // Fixed: Use @> operator for array contains check
-          query = query.contains("attendees", [storedUserId]);
-        } else {
-          setError("User not logged in to view attended interviews.");
-          setLoading(false);
-          return;
-        }
-      }
+      let query = supabase.from("interviews").select("*").eq("created_by", storedUserId);
 
       query = query.order("created_at", { ascending: false });
 
@@ -74,7 +51,7 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
     };
 
     fetchInterviews();
-  }, [filterType, userId]);
+  }, [userId]);
 
   if (loading) {
     return <div className="text-center p-6">Loading interviews...</div>;
@@ -86,8 +63,6 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
 
   if (interviews.length === 0) {
     let content;
-  
-    if (filterType === "createdByUser") {
       content = (
         <>
           <p>You haven&apos;t created any interviews yet.</p>
@@ -100,19 +75,11 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
           </button>
         </>
       );
-    } else if (filterType === "global") {
-      content = "No global interviews available.";
-    } else if (filterType === "attended") {
-      content = "You haven't attended any interviews yet.";
-    } else {
-      content = "No interviews found.";
-    }
-  
     return <div className="text-center p-6 text-gray-500">{content}</div>;
   }
 
   return (
-    <div className="bg-white grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 p-6">
+    <div className="bg-white grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 p-6">
       {interviews.map((interview) => {
         const created_date = new Date(interview.created_at).toLocaleDateString();
         
@@ -139,7 +106,7 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
             
             <h3 className="text-xl font-bold">{interview.role}</h3>
             <p className="text-gray-300 font-semibold mb-2">
-              {interview.level} • {interview.amount} questions
+              {interview.level} • {interview.questions.length} questions
             </p>
             
             <div className="flex flex-row items-center font-semibold justify-between mt-4 text-sm text-gray-400">
@@ -210,7 +177,7 @@ const InterviewCard: React.FC<InterviewCardProps> = ({ filterType }) => {
                 window.location.href = `/attend-interview/${interview.id}`;
               }}
             >
-              {filterType === "attended" ? "Retake Interview" : "Start Interview"}
+              Start Interview
             </button>
           </div>
         );

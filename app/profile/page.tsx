@@ -2,8 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import { FaEdit, FaLinkedin, FaPhone, FaMapMarkerAlt, FaEnvelope, FaUpload, FaFileAlt, FaCamera, FaSpinner } from 'react-icons/fa';
-import { AiOutlineCloseCircle, AiOutlinePlusCircle } from 'react-icons/ai';
+import { FaEdit,FaEnvelope,FaCamera, FaSpinner } from 'react-icons/fa';
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -39,9 +38,9 @@ const defaultUserData: UserData = {
 };
 
 const ProgressGraph: React.FC<{ data: number[] }> = ({ data }) => {
-    const width = 400;
-    const height = 120;
-    const padding = 20;
+    const width = 500;
+    const height = 200;
+    const padding = 30;
     const maxDataValue = Math.max(...data, 100);
     const minDataValue = Math.min(...data, 0);
 
@@ -54,10 +53,10 @@ const ProgressGraph: React.FC<{ data: number[] }> = ({ data }) => {
     return (
         <div className="mt-4 mb-4 pb-4 overflow-x-auto">
             <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
-                <text x={padding - 5} y={yScale(maxDataValue) + 5} textAnchor="middle" className="text-xs fill-gray-500">
+                <text x={padding - 10} y={yScale(maxDataValue) + 5} textAnchor="middle" className="text-xs fill-gray-500">
                     {maxDataValue}%
                 </text>
-                <text x={padding - 5} y={yScale(minDataValue) + 5} textAnchor="middle" className="text-xs fill-gray-500">
+                <text x={padding -10} y={yScale(minDataValue) + 5} textAnchor="middle" className="text-xs fill-gray-500">
                     {minDataValue}%
                 </text>
 
@@ -65,12 +64,12 @@ const ProgressGraph: React.FC<{ data: number[] }> = ({ data }) => {
                     <text
                         key={`x-label-${i}`}
                         x={xScale(i)}
-                        y={height - padding + 15}
+                        y={height - padding + 20}
                         textAnchor="middle"
                         className="text-xs fill-gray-600 font-semiboldc mt-2"
                         style={{ fontSize: "10px" }}
                     >
-                        Month {i + 1}
+                        Interview {i + 1}
                     </text>
                 ))}
 
@@ -172,6 +171,25 @@ const ProfilePage: React.FC = () => {
                     return;
                 }
                 if(interview_data){
+                    const {data:feedback_data , error:feedback_error } = await supabase
+                    .from("feedback")
+                    .select("feedback")
+                    .eq("user_id", userId);
+
+                    if(feedback_error){
+                        console.error("Failed to fetch feedback data:", error);
+                        setLoading(false);
+                        return;
+                    }
+
+                    const feedback = feedback_data || [];
+                    const scores = feedback.map((item) => item.feedback?.overallScore).filter((score) => typeof score === "number");
+                    const averageRating = scores.length ? scores.reduce((acc, score) => acc + score, 0) / scores.length : 0;
+                    const recentScores=scores.slice(-5);
+                    const progress = Array(5 - recentScores.length).fill(0).concat(recentScores);
+                    console.log(progress);
+
+
                     const interviews = interview_data || [];
                     const roleCount: { [key: string]: number } = {};
                     const userSkillsSet = new Set<string>();
@@ -198,8 +216,8 @@ const ProfilePage: React.FC = () => {
                       const stats = {
                         interviewsCreated: interviews.length,
                         interviewsAttended: attendedCount,
-                        successRate: (interviews.filter((interview) => interview.status === "Completed").length / interviews.length) * 100,
-                        progress: [0, 0, 0, 0, 0],
+                        successRate: averageRating,
+                        progress: progress,
                       }
     
                     const userData: UserData = {
@@ -232,9 +250,6 @@ const ProfilePage: React.FC = () => {
             const updateData = {
                 name: user.name,
                 email: user.email,
-                role: user.role,
-                stats: JSON.stringify(user.stats),
-                skills: JSON.stringify(user.skills),
                 avatar: user.avatar,
             };
 
@@ -311,17 +326,6 @@ const ProfilePage: React.FC = () => {
         setUser({ ...user, [e.target.name]: e.target.value });
     };
 
-    const handleSkillAdd = () => {
-        if (newSkill.trim() && !user.skills.includes(newSkill.trim())) {
-            setUser({ ...user, skills: [...user.skills, newSkill.trim()] });
-            setNewSkill("");
-        }
-    };
-
-    const handleSkillRemove = (skill: string) => {
-        setUser({ ...user, skills: user.skills.filter(s => s !== skill) });
-    };
-
     const handleCancel = () => {
         setUser(originalUser);
         setEditing(false);
@@ -387,19 +391,13 @@ const ProfilePage: React.FC = () => {
                                     value={user.name}
                                     onChange={handleChange}
                                 />
-                                <input
-                                    className="block text-xl text-gray-700 mt-2 border-b-2 border-blue-300 focus:outline-none px-2 py-1 rounded-md"
-                                    name="role"
-                                    value={user.role}
-                                    onChange={handleChange}
-                                />
                             </>
                         ) : (
                             <>
                                 <h1 className="text-4xl font-extrabold text-gray-900">{user.name}</h1>
-                                <p className="text-xl text-gray-700 mt-2">{user.role}</p>
                             </>
                         )}
+                        <p className="text-xl text-gray-700 mt-2">{user.role || '-'}</p>
                         <p className="text-base text-gray-500 mt-2">Joined: {user.joined}</p>
                     </div>
                 </div>
@@ -433,42 +431,19 @@ const ProfilePage: React.FC = () => {
                     <h2 className="font-bold text-2xl text-gray-800 mb-4 flex items-center">
                         <i className="fas fa-tools mr-3 text-green-500"></i> Professional Skills
                     </h2>
-                    <div className="flex flex-wrap gap-3 mb-4">
+                    {user.skills && user.skills.length > 0 ? (
+                        <div className="flex flex-wrap gap-3 mb-4">
                         {user.skills.map((skill) => (
                             <span
-                                key={skill}
-                                className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-base font-medium flex items-center shadow-sm"
+                            key={skill}
+                            className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-base font-medium flex items-center shadow-sm"
                             >
-                                {skill}
-                                {editing && (
-                                    <button
-                                        className="ml-3 text-red-500 hover:text-red-700 transition-colors"
-                                        onClick={() => handleSkillRemove(skill)}
-                                        type="button"
-                                        title={`Remove ${skill}`}
-                                    >
-                                        <AiOutlineCloseCircle />
-                                    </button>
-                                )}
+                            {skill}
                             </span>
                         ))}
-                    </div>
-                    {editing && (
-                        <div className="flex items-center gap-3 mt-4">
-                            <input
-                                className="border border-gray-300 rounded-lg px-4 py-2 flex-1 focus:ring-2 focus:ring-blue-400 focus:border-transparent text-base"
-                                value={newSkill}
-                                onChange={(e) => setNewSkill(e.target.value)}
-                                placeholder="Add a new skill (e.g., Python, SQL)"
-                            />
-                            <button
-                                className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-                                onClick={handleSkillAdd}
-                                type="button"
-                            >
-                                <AiOutlinePlusCircle className="mr-2" /> Add Skill
-                            </button>
                         </div>
+                    ) : (
+                        <p className="text-gray-500 italic">Create an interview to show your skills.</p>
                     )}
                 </section>
 
@@ -494,7 +469,7 @@ const ProfilePage: React.FC = () => {
                         </div>
                     </div>
                     <div className="mt-8 bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200">
-                        <h3 className="font-semibold text-xl text-gray-800 mb-3">Progress Insights for past 5 Months</h3>
+                        <h3 className="font-semibold text-xl text-gray-800 mb-3">Progress Insights for past 5 interviews</h3>
                         <ProgressGraph data={user.stats.progress} />
                         <div className="flex flex-wrap justify-center gap-6 mt-4 font-semibold text-gray-700">
                             <div className="flex flex-col items-center">
@@ -505,39 +480,54 @@ const ProfilePage: React.FC = () => {
                             </div>
                             <div className="flex flex-col items-center">
                                 <span className="text-red-600 font-bold text-xl">
-                                    {Math.min(...user.stats.progress)}%
+                                {Math.min(...user.stats.progress.filter(score => score > 0))}%
                                 </span>
                                 <span className="text-xs text-gray-500">Lowest</span>
                             </div>
                             <div className="flex flex-col items-center">
                                 <span className="text-blue-700 font-bold text-xl">
-                                    {(
-                                        user.stats.progress.reduce((a, b) => a + b, 0) /
-                                        user.stats.progress.length
-                                    ).toFixed(1)}
-                                    %
+                                    {(() => {
+                                    const nonZeroProgress = user.stats.progress.filter(score => score > 0);
+                                    return nonZeroProgress.length
+                                        ? (nonZeroProgress.reduce((a, b) => a + b, 0) / nonZeroProgress.length).toFixed(1)
+                                        : "N/A";
+                                    })()}%
                                 </span>
                                 <span className="text-xs text-gray-500">Average</span>
-                            </div>
-                            <div className="flex flex-col items-center ">
-                                <span className={`font-bold text-xl ${
-                                    user.stats.progress[user.stats.progress.length - 1] > user.stats.progress[0]
-                                        ? "text-green-700"
-                                        : user.stats.progress[user.stats.progress.length - 1] < user.stats.progress[0]
-                                        ? "text-red-600"
-                                        : "text-gray-700"
-                                }`}>
-                                    {user.stats.progress[user.stats.progress.length - 1] > user.stats.progress[0]
-                                        ? "↑ Improving"
-                                        : user.stats.progress[user.stats.progress.length - 1] < user.stats.progress[0]
-                                        ? "↓ Declining"
-                                        : "→ Stable"}
+                                </div>
+
+                                <div className="flex flex-col items-center ">
+                                <span
+                                className={`font-bold text-xl ${
+                                    (() => {
+                                    const p = user.stats.progress;
+                                    const first = p.find(score => score > 0);
+                                    const last = [...p].reverse().find(score => score > 0);
+
+                                    if (first === undefined || last === undefined) return "text-gray-500";
+                                    if (last > first) return "text-green-700";
+                                    if (last < first) return "text-red-600";
+                                    return "text-gray-700";
+                                    })()
+                                }`}
+                                >
+                                {(() => {
+                                    const p = user.stats.progress;
+                                    const first = p.find(score => score > 0);
+                                    const last = [...p].reverse().find(score => score > 0);
+
+                                    if (first === undefined || last === undefined) return "= No Trend";
+                                    if (last > first) return "↑ Improving";
+                                    if (last < first) return "↓ Declining";
+                                    return "→ Stable";
+                                })()}
                                 </span>
                                 <span className="text-xs text-gray-500">Trend</span>
-                            </div>
+                                </div>
+
                         </div>
                         <p className="text-sm text-gray-500 text-center mt-3">
-                            Insights based on your interview success rate progress over the last {user.stats.progress.length} months.
+                            Insights based on your interview success rate progress over the last {user.stats.progress.length} Interviews.
                         </p>
                     </div>
                 </section>

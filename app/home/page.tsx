@@ -8,6 +8,7 @@ import Hero from '../components/hero'
 import InterviewCard from '../components/interviewcard'
 import Testimonial from '../components/testimonial'
 import AttendedInterviewCard from '../components/attendedcard'
+import Interview from '../interviews/page'
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -28,9 +29,19 @@ const Home = () => {
         id="past-interviews"
         className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"
       >
-        <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center">
-          🎤 Past Attended Interviews
-        </h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-white text-center flex-1">
+            🎤 Past Attended Interviews
+          </h2>
+          <span 
+            className="text-blue-600 dark:text-blue-400 text-sm font-medium cursor-pointer ml-4 whitespace-nowrap"
+            onClick={() => {
+              window.location.href = '/interviews?type=attended';
+            }}
+            >
+            Show all
+          </span>
+        </div>
 
         {isLoggedIn ? (
           <AttendedInterviewCard />
@@ -58,25 +69,24 @@ const Home = () => {
       {isLoggedIn && (
         <section
           id="created-interviews"
-          className="bg-gray-200 dark:bg-gray-800 px-6 py-8 m-3 rounded-xl shadow-md"
+          className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"
         >
-          <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center">
-            📝 Your Created Interviews
+          <div className="flex items-center justify-between mb-6">
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-white text-center flex-1">
+          📝 Your Created Interviews
           </h2>
-          <InterviewCard filterType="createdByUser" />
+          <span 
+            className="text-blue-600 dark:text-blue-400 text-sm font-medium cursor-pointer ml-4 whitespace-nowrap"
+            onClick={() => {
+              window.location.href = '/interviews?type=created';
+            }}
+            >
+            Show all
+          </span>
+        </div>
+          <InterviewCard/>
         </section>
       )}
-
-      <section
-        id="public-interviews"
-        className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"
-      >
-        <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center">
-          🌐 All Public Interviews
-        </h2>
-        <InterviewCard filterType="global" />
-      </section>
-
       <section
         id="testimonials"
         className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"

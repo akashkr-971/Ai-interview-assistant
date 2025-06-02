@@ -535,9 +535,9 @@ const AttendInterview: React.FC = () => {
           </p>
         </div>
 
-        <p>*If the question is not asked automatically by the interviewer, please click on the "Next Question" button.*</p>
+        <p className='text-sm text-gray-400 text-center'>&#42;If the question is not asked automatically by the interviewer, please click on the &quot;Next Question&quot; button.&#42;</p>
 
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+        <div className="flex flex-col mt-4 sm:flex-row justify-center items-center gap-4">
           <button
             onClick={() => alert('Reported')}
             className="bg-gray-600 text-white px-6 py-2 rounded-full hover:bg-gray-500 text-sm transition"

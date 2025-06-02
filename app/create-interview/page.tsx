@@ -5,6 +5,8 @@ import Navbar from '../components/navbar';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
+import { supabase } from "@/lib/supabaseClient";
+import ProductModal from '../components/product';
 
 declare global {
   interface Window {
@@ -37,7 +39,7 @@ const CreateInterview: React.FC = () => {
     "Awesome! What is the experience level for this role? entry-level, Middle-level, or Senior-level?",
     "Do you want to conduct a behavioural interview, a technical interview, or mixed interview?",
     "Got it! Which technologies or programming languages should the candidate know?",
-    "Cool! How many questions should the interview have? You can say like 5 questions or 10 questions.",
+    "Cool! How many main questions should the interview have? (This is excluding the optional intro and closing questions that we'll handle separately.) You can say something like 3 or 5.",
     "Are you preparing for a specific company or just a general interview?",
     "Thanks! Your interview creation is complete. Good luck and have a great day!"
   ];
@@ -98,7 +100,6 @@ const CreateInterview: React.FC = () => {
       } else {
         setTalking('none');
         setInterviewStarted(false);
-        // Use the ref to get the final state
         sendInterviewData(infoRef.current);
       }
     };
@@ -264,38 +265,46 @@ const CreateInterview: React.FC = () => {
 
   const startInterview = async () => {
     if (interviewStarted) return;
-    
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const userId = localStorage.getItem('userId') || '';
-      if (!userId) {
-        console.error("User ID not found in local storage");
-        return;
+    const coins = await supabase.from('users').select('coins').eq('id', localStorage.getItem('userId')).single();
+    if (coins.data?.coins <= 0) {
+      alert("You don't have enough coins to start the interview.Please recharge and try again.");
+      return;
+    }else{
+      const updatedCoins = coins.data?.coins - 1;
+      await supabase.from('users').update({ coins: updatedCoins }).eq('id', localStorage.getItem('userId'));
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+  
+        const userId = localStorage.getItem('userId') || '';
+        if (!userId) {
+          console.error("User ID not found in local storage");
+          return;
+        }
+        
+        const initialInfo = { 
+          role: '', 
+          level: '', 
+          type: '', 
+          techstack: '', 
+          amount: '', 
+          company: '',
+          userid: userId 
+        };
+        
+        setInfo(initialInfo);
+        infoRef.current = initialInfo; 
+        
+        setInterviewStarted(true);
+        setStep(0);
+        setLastMessage('');
+        setCanRetry(false);
+        
+        speakQuestion(0);
+      } catch (err) {
+        console.error("Microphone access denied", err);
+        alert("Microphone access is required for the interview. Please allow microphone access and try again.");
       }
-      
-      const initialInfo = { 
-        role: '', 
-        level: '', 
-        type: '', 
-        techstack: '', 
-        amount: '', 
-        company: '',
-        userid: userId 
-      };
-      
-      setInfo(initialInfo);
-      infoRef.current = initialInfo; // Sync the ref immediately
-      
-      setInterviewStarted(true);
-      setStep(0);
-      setLastMessage('');
-      setCanRetry(false);
-      
-      speakQuestion(0);
-    } catch (err) {
-      console.error("Microphone access denied", err);
-      alert("Microphone access is required for the interview. Please allow microphone access and try again.");
     }
   };
 

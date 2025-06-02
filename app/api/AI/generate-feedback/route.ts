@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
     }
 
     const savedFeedback = await saveFeedbackToSupabase({
-      id,
       interview_id,
       userId,
       feedback,
@@ -162,7 +161,6 @@ function parseGeminiFeedback(generatedText: string): Feedback {
 }
 
 async function saveFeedbackToSupabase({ 
-  id,
   interview_id, 
   userId, 
   feedback, 
@@ -170,7 +168,6 @@ async function saveFeedbackToSupabase({
   totalTime,
   interviewDetails 
 }: {
-  id: string;
   interview_id: string;
   userId: string;
   feedback: Feedback;
