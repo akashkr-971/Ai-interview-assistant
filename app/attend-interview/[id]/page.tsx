@@ -28,6 +28,7 @@ interface InterviewData {
   questions: string[];
   created_by: string;
   company: string;
+  coverImage:string;
 }
 
 const AttendInterview: React.FC = () => {
@@ -391,7 +392,7 @@ const AttendInterview: React.FC = () => {
         level: interviewData.level,
         type: interviewData.type,
         techstack: interviewData.techstack,
-        company: interviewData.company
+        company: interviewData.coverImage
       },
       completedAt: new Date().toISOString(),
       userId: localStorage.getItem('userId') || '',
@@ -400,6 +401,8 @@ const AttendInterview: React.FC = () => {
     };
     
     console.log('Interview Results:', results);
+
+    //gemini workflow
     
     try {
       // Show loading state
@@ -432,6 +435,39 @@ const AttendInterview: React.FC = () => {
         setLastMessage('Feedback generation failed. You can still view your interview completion.');
       }, 3000);
     }
+
+
+    //ollama workflow
+    // try {
+    //   setLastMessage('Generating your feedback...');
+    
+    //   const response = await fetch('http://localhost:8000/api/generate-feedback', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify(results),
+    //   });
+    
+    //   if (!response.ok) {
+    //     throw new Error(`HTTP error! status: ${response.status}`);
+    //   }
+    
+    //   const feedbackResponse = await response.json();
+    
+    //   if (feedbackResponse.success && feedbackResponse.feedbackId) {
+    //     router.push(`/feedback/${feedbackResponse.feedbackId}`);
+    //   } else {
+    //     throw new Error('Invalid response from feedback API');
+    //   }
+    
+    // } catch (error) {
+    //   console.error("API submission failed", error);
+    //   setLastMessage('Failed to generate feedback. Please try again.');
+    
+    //   setTimeout(() => {
+    //     setLastMessage('Feedback generation failed. You can still view your interview completion.');
+    //   }, 3000);
+    // }
+    
   };
 
   const retryListening = () => {
@@ -571,12 +607,6 @@ const AttendInterview: React.FC = () => {
                   🎤 Continue Speaking
                 </button>
               )}
-              <button
-                onClick={completeInterview}
-                className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-500 transition"
-              >
-                Complete Interview
-              </button>
             </>
           ) : !interviewCompleted ? (
             <button
