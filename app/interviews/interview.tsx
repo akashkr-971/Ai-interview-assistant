@@ -33,18 +33,18 @@ const Interview = () => {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  let [userId, setUserId] = useState<string | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const searchParams = useSearchParams();
   const type = searchParams.get('type');
 
   // Single useEffect to handle all data fetching based on type
   useEffect(() => {
-    const storedUserId = localStorage.getItem("userId");
-    console.log("Stored User ID:", storedUserId);
-    setUserId(storedUserId);
+    userId = localStorage.getItem("userId");
+    console.log("Stored User ID:", userId);
+    setUserId(userId);
 
-    if (!storedUserId) {
+    if (!userId) {
       setError("User not logged in.");
       setLoading(false);
       return;
@@ -60,7 +60,7 @@ const Interview = () => {
           const interviewQuery = supabase
             .from("interviews")
             .select("*")
-            .contains("attendees", [storedUserId])
+            .contains("attendees", [userId])
             .order("created_at", { ascending: false });
 
           const feedbackQuery = supabase
@@ -96,7 +96,7 @@ const Interview = () => {
           const query = supabase
             .from("interviews")
             .select("*")
-            .eq("created_by", storedUserId)
+            .eq("created_by", userId)
             .order("created_at", { ascending: false });
 
           const { data, error: fetchError } = await query;
