@@ -32,7 +32,7 @@ const InterviewCard: React.FC = () => {
     const fetchInterviews = async () => {
       setLoading(true);
       setError(null);
-      let query = supabase.from("interviews").select("*").eq("created_by", storedUserId);
+      let query = supabase.from("interviews").select("*").eq("created_by", storedUserId).limit(4);
 
       query = query.order("created_at", { ascending: false });
 

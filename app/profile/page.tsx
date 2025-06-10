@@ -215,7 +215,7 @@ const ProfilePage: React.FC = () => {
                       const stats = {
                         interviewsCreated: interviews.length,
                         interviewsAttended: attendedCount,
-                        successRate: averageRating,
+                        successRate: averageRating.toPrecision(4),
                         progress: progress,
                       }
     
