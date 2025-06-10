@@ -10,7 +10,7 @@ const footer = () => {
           <div className="mb-6 md:mb-0">
             <div className="flex items-center justify-center">
               <Image src={"/logo.webp"} alt="Logo" width={50} height={50} className='rounded-full mr-2'></Image>
-              <span className="text-lg font-semibold">PrepWise</span>
+              <span className="text-lg font-semibold">RolePrep</span>
             </div>
             <p className="text-sm mt-2 text-center">
                 Your one-stop solution for interview preparation.
@@ -74,7 +74,7 @@ const footer = () => {
         </div>
         {/* Copyright */}
         <div className="text-center mt-8">
-          <p className="text-sm">© 2025 PrepWise. All rights reserved.</p>
+          <p className="text-sm">&copy; {new Date().getFullYear()} RolePrep. All rights reserved.</p>
         </div>
       </div>
     </footer>

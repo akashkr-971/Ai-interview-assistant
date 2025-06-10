@@ -50,7 +50,7 @@ const Navbar = () => {
         {/* Logo Section */}
         <Link href="/" className="flex items-center space-x-3 transition-transform duration-200 hover:scale-105">
           <Image src="/logo.webp" className="rounded-full border-2 border-blue-400" alt="PrepWise Logo" width={50} height={50} />
-          <h2 className="text-xl font-extrabold text-blue-300 tracking-wide">PrepWise</h2>
+          <h2 className="text-xl font-extrabold text-blue-300 tracking-wide">RolePrep</h2>
         </Link>
 
         {/* Hamburger Icon */}
