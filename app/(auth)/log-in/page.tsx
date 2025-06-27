@@ -32,11 +32,20 @@ const LogIn = () => {
       } else {
         console.log("Login Successful:", data);
         const userId = data.user?.id;
+        const {data:userRoleData} = await supabase.from('users').select('role').eq('id', userId).single();
+        const role = userRoleData?.role
         console.log("User ID:", userId);
         if (userId) {
           localStorage.setItem("userId", userId);
+          console.log('The role is : ',role);
+          if(role == "admin"){
+            window.location.href = "/admin";
+          }else if(role == "interviewer"){
+            window.location.href = "/interviewer";
+          }else{
+            window.location.href = "/";
+          }
         }
-        window.location.href = "/";
       }
     }
 
@@ -68,7 +77,7 @@ const LogIn = () => {
                             autoComplete="current-password"
                         />
                         <div className='flex flex-col space-y-4 '>
-                            <Button text="Log In"/>
+                            <Button text="Log In" onClick={() => {}}/>
                             <p className="text-sm text-center text-gray-600">
                                 Don&apos;t have an account?
                                 <Link href="/sign-up" className="text-blue-500 hover:underline">

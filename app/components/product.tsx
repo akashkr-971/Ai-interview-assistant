@@ -85,7 +85,7 @@ export default function ProductModal({ onClose }: { onClose: () => void }) {
       description: `${selectedProduct.label} Purchase`,
       order_id: order.id,
       handler: () => {
-        updatecoins(selectedProduct.coins);
+        updatecoins(selectedProduct.coins,selectedProduct.price);
         onClose();
       },
       prefill: {
@@ -112,10 +112,19 @@ export default function ProductModal({ onClose }: { onClose: () => void }) {
     rzp?.open()
   }
 
-  const updatecoins = async (coins:number) => {
-    const {error} = await supabase.from('users').update({coins: coins}).eq('id', localStorage.getItem('userId'));
-    if(error){
-      console.log(error);
+  const updatecoins = async (coins:number,price:number) => {
+    const { data } = await supabase.from('users').select('coins').eq('id', localStorage.getItem('userId')).single();
+    if (data?.coins) {
+      const updatedCoins = data.coins + coins;
+      const { error } = await supabase.from('users').update({ coins: updatedCoins }).eq('id', localStorage.getItem('userId'));
+      if (error) {
+        console.log(error);
+      }
+      const {error:paymentError } = await supabase.from('payments').insert({user_id: localStorage.getItem('userId'), quantity: coins , amount: price});
+      if(paymentError){
+        console.log(paymentError);
+      }
+      window.location.reload();
     }
   }
 
