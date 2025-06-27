@@ -97,7 +97,7 @@ const SignIn = () => {
                     <div className="text-3xl">🧑‍🎓</div>
                     <div>
                       <h3 className="text-md font-semibold">Candidate</h3>
-                      <p className="text-xs text-gray-500">I'm here to practice interviews</p>
+                      <p className="text-xs text-gray-500">I&apos;m here to practice interviews</p>
                     </div>
                   </div>
                 </div>
@@ -113,7 +113,7 @@ const SignIn = () => {
                     <div className="text-3xl">🧑‍💼</div>
                     <div>
                       <h3 className="text-md font-semibold">Interviewer</h3>
-                      <p className="text-xs text-gray-500">I'm here to take interviews</p>
+                      <p className="text-xs text-gray-500">I&apos;m here to take interviews</p>
                     </div>
                   </div>
                 </div>
