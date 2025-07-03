@@ -53,7 +53,6 @@ const Interview = () => {
 
       try {
         if (type === "attended") {
-          // Fetch attended interviews and feedback
           const interviewQuery = supabase
             .from("interviews")
             .select("*")
