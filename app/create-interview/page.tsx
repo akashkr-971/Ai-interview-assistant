@@ -318,10 +318,6 @@ const CreateInterview: React.FC = () => {
     }
   };
 
-  const reportError = async () => {
-    
-  }
-
   const stopInterview = () => {
     synth?.cancel();
     cleanupRecognition();

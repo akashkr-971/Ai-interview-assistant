@@ -65,9 +65,8 @@ const AttendInterview: React.FC = () => {
       alert('✅ Your report has been submitted successfully!');
       router.replace(pathname);
     }
-  }, [reportStatus , router]);
+  }, [reportStatus , router ,pathname]);
 
-  // Update refs when state changes
   useEffect(() => {
     currentQuestionRef.current = currentQuestionIndex;
   }, [currentQuestionIndex]);
