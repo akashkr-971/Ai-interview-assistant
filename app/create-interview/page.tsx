@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '../components/navbar';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
-import { useRouter } from 'next/navigation';
+import { useRouter , useSearchParams } from 'next/navigation';
 import { supabase } from "@/lib/supabaseClient";
 
 declare global {
@@ -27,11 +27,22 @@ const CreateInterview: React.FC = () => {
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [canRetry, setCanRetry] = useState(false);
+  const [report ,showReportModel] = useState(false);
   const router = useRouter();
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stepRef = useRef(step);
   const infoRef = useRef(info);
+
+  const searchParams = useSearchParams();
+  const reportStatus = searchParams.get('report');
+
+  useEffect(() => {
+    if (reportStatus === 'submitted') {
+      alert('✅ Your report has been submitted successfully!');
+      router.replace('/create-interview');
+    }
+  }, [reportStatus , router]);
 
   const questions = [
     "Hi! Welcome to your personalized interview creator. What's the role you're hiring for?",
@@ -307,6 +318,10 @@ const CreateInterview: React.FC = () => {
     }
   };
 
+  const reportError = async () => {
+    
+  }
+
   const stopInterview = () => {
     synth?.cancel();
     cleanupRecognition();
@@ -349,7 +364,7 @@ const CreateInterview: React.FC = () => {
         </div>
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
           <button
-            onClick={() => alert('Reported')}
+            onClick={() => showReportModel(true)}
             className="bg-gray-600 text-white px-6 py-2 rounded-full hover:bg-gray-500 text-sm transition"
           >
             🛡️ Report
@@ -388,7 +403,23 @@ const CreateInterview: React.FC = () => {
           </div>
         )}
       </div>
+      {report && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-100 z-40 flex items-center justify-center">
+          <div className="bg-white w-full max-w-lg p-6 rounded-lg z-50 relative shadow-lg">
+            <button onClick={() => showReportModel(false)} className="absolute top-2 right-3 text-xl text-gray-500 hover:text-gray-800">x</button>
+            <h2 className="text-xl font-bold text-center text-purple-600 mb-4">Report</h2>
+            <form action="/api/report" method="post">
+              <label htmlFor="report" className="block text-sm font-medium text-gray-700">Enter your complaint in detail*</label>
+              <input type="hidden" name="id" value={localStorage.getItem('userId')||""}/>
+              <input type="hidden" name="source" value="create-interview"/>
+              <textarea id="report" name="report" required rows={4} className="mt-1 resize-none border text-black p-3 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
+              <button type="submit" className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Submit</button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 };
 
