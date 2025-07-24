@@ -39,6 +39,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem("userId");
+    localStorage.removeItem('role');
     setIsLoggedIn(false);
     window.location.href = "/";
     console.log("Logged out successfully");

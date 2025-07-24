@@ -24,6 +24,9 @@ import BookingDetail from './adminComponent/BookingDetail';
 import ReportDetail from './adminComponent/ReportDetail';
 import TestimonialDetail from './adminComponent/TestimonialDetail';
 import Dashboard from './adminComponent/Dashboard';
+import PaymentRequest from './adminComponent/PaymentRequest';
+
+
 
 
 const Admin = () => {
@@ -35,6 +38,7 @@ const Admin = () => {
     { key: 'interviewers', label: 'Interviewers', icon: <Briefcase className="w-4 h-4" /> },
     { key: 'new-interviewers', label: 'New Interviewers', icon: <UserPlus className="w-4 h-4" /> },
     { key: 'payments', label: 'Payments', icon: <Wallet className="w-4 h-4" /> },
+    { key: 'paymentsRequest', label: 'Payments Request', icon: <Wallet className="w-4 h-4" /> },
     { key: 'bookings', label: 'Bookings', icon: <Calendar className="w-4 h-4" /> },
     { key: 'testimonials', label: 'Testimonials', icon: <MessageCircle className="w-4 h-4" /> },
     { key: 'reports', label: 'Reports', icon: <FileText className="w-4 h-4" /> },
@@ -44,13 +48,18 @@ const Admin = () => {
       console.log("Logging out...");
       await supabase.auth.signOut();
       localStorage.removeItem("userId");
+      localStorage.removeItem('role');
       window.location.href = "/";
       console.log("Logged out successfully");
     }
 
   useEffect(() => {
     const IsLoggedIn = localStorage.getItem('userId');
+    const role = localStorage.getItem('role');
     if (IsLoggedIn !== "9f3aa1e5-87b0-42f8-952b-2fb4b862bacb") {
+      window.location.href = '/';
+    }
+    if(role !== 'admin') {
       window.location.href = '/';
     }
   }, []);
@@ -73,6 +82,8 @@ const Admin = () => {
         return <ReportDetail />;
       case 'testimonials':
         return <TestimonialDetail />;
+      case 'paymentsRequest':
+        return <PaymentRequest />;
       default:
         return <div>Select a tab</div>;
     }

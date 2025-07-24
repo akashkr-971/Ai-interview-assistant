@@ -60,6 +60,7 @@ const SignIn = () => {
       }
 
       localStorage.setItem("userId", data.user.id);
+      localStorage.setItem("userId", data.user.role||'user');
       console.log("User signed up successfully:", data.user.id);
       console.log("User role:", data.user.role);
       if(data.user.role === 'admin'){

@@ -37,6 +37,7 @@ const LogIn = () => {
         console.log("User ID:", userId);
         if (userId) {
           localStorage.setItem("userId", userId);
+          localStorage.setItem("role", role);
           console.log('The role is : ',role);
           if(role == "admin"){
             window.location.href = "/admin";

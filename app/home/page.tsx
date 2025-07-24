@@ -15,8 +15,12 @@ const Home = () => {
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
+    const role = localStorage.getItem("role");
     if (userId) {
       setIsLoggedIn(true);
+    }
+    if(role == "admin" || role == "interviewer") {
+      window.location.href = `/${role}`;
     }
   }, []);
 
@@ -152,7 +156,7 @@ const FloatingChatbot = () => {
                   </svg>
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-white">Mistral AI</h1>
+                  <h1 className="text-xl font-bold text-white">InterviewIQ</h1>
                   <p className="text-xs text-gray-400">Powered by Ollama</p>
                 </div>
               </div>
