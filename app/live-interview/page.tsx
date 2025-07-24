@@ -190,7 +190,7 @@ export default function LiveInterviewPage() {
             ]);
             setSelectedInterviewer(null);
             const coins  = interviewPrice / 10; // Assuming 1 coin = ₹10
-            const { data: userData, error: userError } = await supabase
+            const { data: userData } = await supabase
                 .from("users")
                 .select("coins")
                 .eq("id", user_id)
@@ -205,7 +205,7 @@ export default function LiveInterviewPage() {
                     console.error("Error updating coins:", coinError);
                 }
             }
-            const {data:interviewerdata,error:interviewerError} = await supabase
+            const {data:interviewerdata} = await supabase
                 .from("interviewers")
                 .select("wallet")
                 .eq("user_id", interviewer_id)

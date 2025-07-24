@@ -72,6 +72,7 @@ const InterviewerDetail = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-blue-600 text-white">
               <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">ID</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Name</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Email</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Coins</th>
@@ -89,6 +90,7 @@ const InterviewerDetail = () => {
                 const user = entry.users;
                 return (
                   <tr key={entry.id} className="hover:bg-gray-50 transition duration-150 ease-in-out">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user?.id || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline cursor-pointer">{user?.email || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{user?.coins || 0}</td>

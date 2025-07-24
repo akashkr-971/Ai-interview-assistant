@@ -66,7 +66,7 @@ const Chatbot = () => {
             const parsed = JSON.parse(line);
             if (parsed?.message?.content) {
               assistantReply += parsed.message.content;
-              setMessages(prev => [
+              setMessages(() => [
                 ...newMessages,
                 { role: 'assistant', content: assistantReply }
               ]);
@@ -105,7 +105,7 @@ const Chatbot = () => {
             </div>
             <h2 className="text-xl font-semibold mb-2">Start your interview practice</h2>
             <p className="text-gray-400 max-w-md">
-              Begin with "I'd like to practice [language/technology]" or ask for a specific type of interview question.
+              Begin with &quot;I&quot;d like to practice [language/technology]&quot; or ask for a specific type of interview question.
             </p>
           </div>
         ) : (
