@@ -1,4 +1,4 @@
-import React from 'react'
+// ...existing code...
 import Image from 'next/image'
 
 const Hero = () => {
@@ -16,6 +16,11 @@ const Hero = () => {
               Easily create an AI Interview Helper with this online tool.
             </p>
             <button onClick={()=>{
+              if (!localStorage.getItem("userId")) {
+                alert("Please log in to create an interview.");
+                window.location.href = '/log-in';
+                return;
+              }
               window.location.href = '/create-interview';
             }} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
               Create an interview

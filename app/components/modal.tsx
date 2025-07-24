@@ -1,4 +1,4 @@
-import React from 'react';
+// ...existing code...
 
 const Modal = ({ title, children, onClose }: any) => {
   return (

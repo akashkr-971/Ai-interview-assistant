@@ -1,4 +1,4 @@
-import React from 'react';
+// ...existing code...
 import { User } from "lucide-react";
 
 interface TestimonialCardProps {

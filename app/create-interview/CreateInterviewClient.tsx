@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Navbar from '../components/navbar';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";

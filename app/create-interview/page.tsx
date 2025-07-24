@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import CreateInterviewClient from './CreateInterviewClient';
 
 export default function Page() {

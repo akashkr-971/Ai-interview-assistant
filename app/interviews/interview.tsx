@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import React from 'react';
+// ...existing code...
 import { supabase } from '@/lib/supabaseClient';
 import Image from 'next/image';
 import Navbar from '../components/navbar';

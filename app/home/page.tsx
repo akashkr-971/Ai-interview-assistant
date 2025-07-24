@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+// ...existing code...
 import { useEffect, useState } from 'react'
 import Navbar from '../components/navbar'
 import Footer from '../components/footer'
@@ -8,6 +8,7 @@ import Hero from '../components/hero'
 import InterviewCard from '../components/interviewcard'
 import Testimonial from '../components/testimonial'
 import AttendedInterviewCard from '../components/attendedcard'
+import Chatbot from '../components/Chatbot'
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -93,9 +94,106 @@ const Home = () => {
         <Testimonial />
       </section>
 
+
       <Footer />
     </>
   )
 }
+const FloatingChatbot = () => {
+  const [open, setOpen] = useState(false);
 
-export default Home
+  return (
+    <div className="fixed bottom-8 right-8 z-[1000]">
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="group relative flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 cursor-pointer"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8 text-white group-hover:scale-110 transition-transform"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            />
+          </svg>
+          <span className="absolute -top-2 -right-2 flex items-center justify-center w-6 h-6 rounded-full bg-white text-blue-600 text-xs font-bold shadow-sm">
+            AI
+          </span>
+        </button>
+      )}
+
+      {open && (
+        <div className="relative">
+          <div className="absolute bottom-0 right-0 w-full sm:w-[420px] h-[800px] max-h-[100vh] bg-gray-900 rounded-2xl shadow-2xl shadow-gray-900/30 overflow-hidden flex flex-col z-[1001] animate-fade-in-up">
+            {/* Header */}
+            <div className="flex justify-between items-center p-4 bg-gradient-to-r from-gray-800 to-gray-800 border-b border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-white">Mistral AI</h1>
+                  <p className="text-xs text-gray-400">Powered by Ollama</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setOpen(false)}
+                className="p-1 rounded-full hover:bg-gray-700/50 transition-colors text-gray-400 hover:text-white"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-hidden">
+              <Chatbot />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+const HomeWithChatbot = () => {
+  // ...existing Home component code...
+  return (
+    <>
+      <Home />
+      <FloatingChatbot />
+    </>
+  );
+};
+
+export default HomeWithChatbot;

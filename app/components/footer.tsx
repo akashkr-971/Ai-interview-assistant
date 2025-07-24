@@ -1,4 +1,4 @@
-import React from 'react'
+// ...existing code...
 import Link from 'next/link'
 import Image from 'next/image'
 

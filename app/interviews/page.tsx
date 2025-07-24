@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import Interview from './interview';
 
 export default function InterviewsPage() {

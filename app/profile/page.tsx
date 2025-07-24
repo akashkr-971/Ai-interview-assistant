@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import { FaEdit,FaEnvelope,FaCamera, FaSpinner } from 'react-icons/fa';
