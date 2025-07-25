@@ -131,11 +131,41 @@ const ProfilePage: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    // Aptitude test score state
+    const [aptitudeScores, setAptitudeScores] = useState<number[]>([]);
+    const [averageAptitudeScore, setAverageAptitudeScore] = useState<number | null>(null);
 
     useEffect(() => {
         fetchUserData();
+        fetchAptitudeScores();
     }, []);
 
+    // Fetch aptitude test scores for the user
+    const fetchAptitudeScores = async () => {
+        try {
+            const userId = localStorage.getItem("userId");
+            if (!userId) return;
+            // Assuming aptitude test scores are stored in a table called 'aptitude_scores' with columns: user_id, score
+            const { data, error } = await supabase
+                .from("aptitude_scores")
+                .select("score")
+                .eq("user_id", userId);
+            if (error) {
+                console.error("Failed to fetch aptitude scores:", error);
+                return;
+            }
+            const scores = (data || []).map((row) => row.score).filter((score) => typeof score === "number");
+            setAptitudeScores(scores);
+            if (scores.length) {
+                const avg = scores.reduce((acc, score) => acc + score, 0) / scores.length;
+                setAverageAptitudeScore(Number(avg.toFixed(2)));
+            } else {
+                setAverageAptitudeScore(null);
+            }
+        } catch (error) {
+            console.error("Error fetching aptitude scores:", error);
+        }
+    };
     const fetchUserData = async () => {
         try {
             setLoading(true);
@@ -466,6 +496,22 @@ const ProfilePage: React.FC = () => {
                             <p className="text-gray-600 text-lg mt-2">Success Rate</p>
                         </div>
                     </div>
+
+                    <section className="mb-8 mt-4">
+                        <h2 className="font-bold text-2xl text-gray-800 mb-4 flex items-center">
+                            <i className="fas fa-brain mr-3 text-purple-500"></i> Aptitude Test Performance
+                        </h2>
+                        {averageAptitudeScore !== null ? (
+                            <div className="bg-purple-50 p-5 rounded-lg shadow-sm border border-purple-200 text-center">
+                                <p className="text-4xl font-extrabold text-purple-700">{averageAptitudeScore}/10</p>
+                                <p className="text-gray-600 text-lg mt-2">Average Aptitude Test Score</p>
+                                <p className="text-gray-500 text-sm mt-1">Based on {aptitudeScores.length} attempt{aptitudeScores.length === 1 ? '' : 's'}.</p>
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 italic">No aptitude test attempts found for this user.</p>
+                        )}
+                    </section>
+
                     <div className="mt-8 bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200">
                         <h3 className="font-semibold text-xl text-gray-800 mb-3">Progress Insights for past 5 interviews</h3>
                         <ProgressGraph data={user.stats.progress} />

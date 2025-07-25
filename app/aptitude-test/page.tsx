@@ -6,7 +6,8 @@ import questions from '@/lib/aptitudeqns.json';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/card';
 import { cn } from '@/lib/utils';
 import Navbar from '../components/navbar';
-import Footer from '../components/footer'; // Corrected import name
+import Footer from '../components/footer';
+import { supabase } from '@/lib/supabaseClient';
 
 interface Question {
   id: number;
@@ -31,15 +32,33 @@ const AptitudeQuiz = () => {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [hintsVisibility, setHintsVisibility] = useState<{ [id: number]: boolean }>({}); // State for hints
 
-  // Memoize handleSubmit to prevent useEffect re-triggering unnecessarily
-  const handleSubmit = useCallback((isAutoSubmit = false) => {
+
+  const handleSubmit = useCallback(async (isAutoSubmit = false) => {
     if (!isAutoSubmit && Object.keys(userAnswers).length < quizQuestions.length) {
-      // In a real app, prefer a modal/toast over alert()
       alert("Please answer all questions before submitting.");
       return;
     }
     setSubmitted(true);
-  }, [userAnswers, quizQuestions.length]);
+
+    // Insert score into supabase if user is logged in
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+    if (userId && /^[0-9a-fA-F-]{36}$/.test(userId)) {
+      const score = quizQuestions.reduce((acc, q) => acc + (userAnswers[q.id] === q.correct_answer ? 1 : 0), 0);
+      const { error } = await supabase.from('aptitude_scores').insert([
+        {
+          user_id: userId,
+          score,
+          total: quizQuestions.length,
+          taken_at: new Date().toISOString()
+        }
+      ]);
+      if (error) {
+        console.error('Supabase insert error:', error.message);
+      }
+    } else if (userId) {
+      console.warn('Invalid userId format, not inserting score:', userId);
+    }
+  }, [userAnswers, quizQuestions]);
 
 
   const startNewQuiz = useCallback(() => {
@@ -104,6 +123,11 @@ const AptitudeQuiz = () => {
 
   if (quizQuestions.length === 0) {
     return <div>Loading Quiz...</div>;
+  }
+
+  function printResult(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
+    event.preventDefault();
+    window.print();
   }
 
   return (
@@ -217,6 +241,9 @@ const AptitudeQuiz = () => {
                     </p>
                     <button onClick={startNewQuiz} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
                         Try Again
+                    </button>
+                    <button onClick={printResult} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 ml-3 px-6 rounded-lg transition-colors">
+                        Print Results
                     </button>
                 </CardContent>
 
