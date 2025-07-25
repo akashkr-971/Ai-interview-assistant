@@ -133,7 +133,7 @@ export default function Testimonial() {
   }, [submissionSuccess]);
 
   return (
-    <div className=" bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative overflow-hidden flex flex-col">
+    <div className="bg-gradient-to-br from-blue-50 to-blue-200  relative overflow-hidden flex flex-col">
       <div className="absolute inset-0 opacity-15">
         <div className="absolute w-96 h-96 bg-blue-200 rounded-full blur-3xl -top-48 -left-48 animate-pulse-slow" />
         <div className="absolute w-96 h-96 bg-purple-200 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse-slow delay-1000" />
@@ -225,12 +225,12 @@ export default function Testimonial() {
         )}
       </div>
 
-      <section className="py-8 flex-grow">
+      <section className="py-8 flex-grow ">
         <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">
           What Our Users Say
         </h2>
         {testimonials.length > 0 ? (
-          <Marquee gradient={true} speed={50} pauseOnHover={true}>
+          <Marquee speed={50} pauseOnHover={true} className="">
             {testimonials.map((item, index) => (
               <div key={`${item.id}-${index}`} className="mx-3 p-2 min-w-[280px] max-w-[380px] flex-none">
                 <TestimonialCard item={item} className="h-full" />

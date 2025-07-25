@@ -9,6 +9,7 @@ import InterviewCard from '../components/interviewcard'
 import Testimonial from '../components/testimonial'
 import AttendedInterviewCard from '../components/attendedcard'
 import Chatbot from '../components/Chatbot'
+import HomeAptitudeTest from '../components/HomeAptitudeTest'
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -31,7 +32,7 @@ const Home = () => {
 
       <section
         id="past-interviews"
-        className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"
+        className="bg-gradient-to-br from-blue-50 to-blue-200 border-2 border-blue-300 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-3xl font-bold text-gray-800 dark:text-white text-center flex-1">
@@ -91,9 +92,12 @@ const Home = () => {
           <InterviewCard/>
         </section>
       )}
+      <section>
+        <HomeAptitudeTest />
+      </section>
       <section
         id="testimonials"
-        className="bg-gray-100 dark:bg-gray-900 px-6 py-8 m-3 rounded-xl shadow-md"
+        className="bg-gradient-to-br from-blue-50 to-blue-200 border-2 border-blue-300 px-6 py-8 m-3 rounded-xl shadow-md"
       >
         <Testimonial />
       </section>
