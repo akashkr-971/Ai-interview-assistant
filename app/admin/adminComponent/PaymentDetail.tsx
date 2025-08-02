@@ -9,6 +9,9 @@ const fetchPayments = async () => {
       payment_id,
       quantity,
       amount,
+      payment_method,
+      status,
+      razorpay_payment_id,
       created_at,
       users(name)
     `);
@@ -37,8 +40,11 @@ const PaymentDetail = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-blue-600 text-white">
               <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">RazorPay Payment ID</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">User Name</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Quantity</th>
+                <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">status</th>
+                <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Payment Method</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Amount</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Purchased At</th>
               </tr>
@@ -47,8 +53,11 @@ const PaymentDetail = () => {
               {payments && payments.length > 0 ? (
                 payments.map((payment: any) => (
                   <tr key={payment.id} className="hover:bg-gray-50 transition duration-150 ease-in-out">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{payment.razorpay_payment_id || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{payment.users?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{payment.quantity}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{payment.status}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{payment.payment_method}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
                       ₹{payment.amount?.toLocaleString('en-IN') || '0.00'} {/* Format as Indian Rupee */}
                     </td>

@@ -8,6 +8,7 @@ export type TestimonialType = {
   id: number;
   testimonial: string;
   rating: number;
+  created_at?: string;
   user_id: {
     name: string;
   } | null;
@@ -44,6 +45,7 @@ export default function Testimonial() {
           id,
           testimonial,
           rating,
+          created_at,
           user_id (
             name
           )
@@ -61,6 +63,7 @@ export default function Testimonial() {
           id: item.id,
           testimonial: item.testimonial,
           rating: item.rating,
+          created_at: item.created_at,
           user_id: Array.isArray(item.user_id) && item.user_id.length > 0
             ? item.user_id[0]
             : item.user_id
@@ -233,7 +236,13 @@ export default function Testimonial() {
           <Marquee speed={50} pauseOnHover={true} className="">
             {testimonials.map((item, index) => (
               <div key={`${item.id}-${index}`} className="mx-3 p-2 min-w-[280px] max-w-[380px] flex-none">
-                <TestimonialCard item={item} className="h-full" />
+                <TestimonialCard
+                  item={{
+                    ...item,
+                    created_at: item.created_at ?? ""
+                  }}
+                  className="h-full"
+                />
               </div>
             ))}
           </Marquee>

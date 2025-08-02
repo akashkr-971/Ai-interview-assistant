@@ -84,8 +84,21 @@ export default function ProductModal({ onClose }: { onClose: () => void }) {
       name: 'PrepWise',
       description: `${selectedProduct.label} Purchase`,
       order_id: order.id,
-      handler: () => {
-        updatecoins(selectedProduct.coins,selectedProduct.price);
+      handler: async (response: RazorpayResponse) => {
+        const paymentDetails = await fetch('/api/razorpay/getPaymentDetails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payment_id: response.razorpay_payment_id,
+          }),
+        }).then((res) => res.json());
+
+        await updatecoins(
+          selectedProduct.coins, 
+          selectedProduct.price, 
+          paymentDetails.method || 'unknown',
+          response.razorpay_payment_id
+        );
         onClose();
       },
       prefill: {
@@ -112,7 +125,7 @@ export default function ProductModal({ onClose }: { onClose: () => void }) {
     rzp?.open()
   }
 
-  const updatecoins = async (coins:number,price:number) => {
+  const updatecoins = async (coins: number, price: number, paymentMethod: string, paymentId: string) => {
     const { data } = await supabase.from('users').select('coins').eq('id', localStorage.getItem('userId')).single();
     if (data?.coins) {
       const updatedCoins = data.coins + coins;
@@ -120,8 +133,17 @@ export default function ProductModal({ onClose }: { onClose: () => void }) {
       if (error) {
         console.log(error);
       }
-      const {error:paymentError } = await supabase.from('payments').insert({user_id: localStorage.getItem('userId'), quantity: coins , amount: price});
-      if(paymentError){
+      
+      const { error: paymentError } = await supabase.from('payments').insert({
+        user_id: localStorage.getItem('userId'), 
+        quantity: coins, 
+        amount: price,
+        payment_method: paymentMethod,
+        razorpay_payment_id: paymentId,
+        status: 'completed'
+      });
+      
+      if (paymentError) {
         console.log(paymentError);
       }
       window.location.reload();
