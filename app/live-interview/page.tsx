@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
+import Modal from '../components/modal';
 
 type Interviewer = {
     id: number;
@@ -35,12 +36,26 @@ type Booking = {
     interviewer_name?: string;
 };
 
+type InterviewReportModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  report: {
+    score: number;
+    feedback: string;
+    strengths: string;
+    weaknesses: string;
+    created_at: string;
+  } | null;
+};
+
 export default function LiveInterviewPage() {
     const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
     const [selectedInterviewer, setSelectedInterviewer] = useState<Interviewer | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [scheduledInterviews, setScheduledInterviews] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isReportOpen, setIsReportOpen] = useState(false);
+      const [selectedReport, setSelectedReport] = useState<InterviewReportModalProps['report']>(null);
 
     useEffect(() => {
         const fetchInterviewers = async () => {
@@ -225,6 +240,13 @@ export default function LiveInterviewPage() {
         }
     };
 
+    const viewReport = async (bookingId: number) => {
+        const report = await fetch(`/api/interview-report?bookingId=${bookingId}`);
+        const data = await report.json();
+        setSelectedReport(data);
+        setIsReportOpen(true);
+    };
+
     const activeBookings = scheduledInterviews.filter(b => b.status === 'Scheduled' || b.status === 'Accepted');
 
     return (
@@ -265,6 +287,28 @@ export default function LiveInterviewPage() {
                             ))}
                         </div>
                     )}
+
+                    {isReportOpen && (
+                        <Modal
+                            title="Interview Report"
+                            onClose={() => {
+                            setIsReportOpen(false);
+                            setSelectedReport(null);
+                            }}
+                        >
+                            {selectedReport ? (
+                            <div className="space-y-4">
+                                <p><strong>Score:</strong> {selectedReport.score}</p>
+                                <p><strong>Feedback:</strong> {selectedReport.feedback}</p>
+                                <p><strong>Strengths:</strong> {selectedReport.strengths}</p>
+                                <p><strong>Weaknesses:</strong> {selectedReport.weaknesses}</p>
+                                <p><strong>Date:</strong> {new Date(selectedReport.created_at).toLocaleDateString()}</p>
+                            </div>
+                            ) : (
+                            <p>No report available for this booking.</p>
+                            )}
+                        </Modal>
+                        )}
 
                     {selectedInterviewer && (
                         <div className="mt-10 bg-white p-6 rounded-xl shadow-md border border-gray-200">
@@ -420,6 +464,13 @@ export default function LiveInterviewPage() {
                                     <p className="text-sm text-gray-600 mb-1">Date: {interview.date}</p>
                                     <p className="text-sm text-gray-600 mb-1">Time: {interview.time}</p>
                                     <p className={`text-sm font-medium ${interview.status === 'Accepted' ? 'text-green-600' : interview.status === 'Cancelled' ? 'text-red-600' : 'text-yellow-600'}`}>Status: {interview.status}</p>
+                                    {interview.status === "Completed" && (
+                                        <button
+                                            onClick={() => viewReport(interview.id)} 
+                                            className="bg-blue-500 text-white p-2 rounded mt-2 hover:bg-blue-600 transition">
+                                            View Report
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>

@@ -201,6 +201,7 @@ async function saveFeedbackToSupabase({
       throw new Error(`Failed to update attendees: ${updateError.message}`);
     }
 
+    // Save feedback to database
     const { data, error } = await supabase
       .from('feedback')
       .insert({
@@ -218,6 +219,34 @@ async function saveFeedbackToSupabase({
     if (error) {
       console.error('Error saving feedback to Supabase:', error);
       throw new Error(`Failed to save feedback: ${error.message}`);
+    }
+
+    if (feedback.overallScore > 75) {
+      console.log(`Score ${feedback.overallScore} is above 75, incrementing coins for user ${userId}`);
+      
+      const { data: userData, error: userFetchError } = await supabase
+        .from('users')
+        .select('coins')
+        .eq('id', userId)
+        .single();
+
+      if (userFetchError) {
+        console.error('Error fetching user coins:', userFetchError);
+        } else {
+        const currentCoins = userData?.coins || 0;
+        const newCoins = currentCoins + 5;
+
+        const { error: coinUpdateError } = await supabase
+          .from('users')
+          .update({ coins: newCoins })
+          .eq('id', userId);
+
+        if (coinUpdateError) {
+          console.error('Error updating user coins:', coinUpdateError);
+        } else {
+          console.log(`Successfully updated coins for user ${userId}: ${currentCoins} -> ${newCoins}`);
+        }
+      }
     }
 
     console.log('Feedback saved successfully:', data);
