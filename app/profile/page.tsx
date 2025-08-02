@@ -304,53 +304,6 @@ const ProfilePage: React.FC = () => {
         }
     };
 
-    const uploadFileToSupabase = async (file: File, bucket: string, path: string) => {
-        const { error } = await supabase.storage
-            .from(bucket)
-            .upload(path, file, {
-                cacheControl: '3600',
-                upsert: true
-            });
-
-        if (error) {
-            throw error;
-        }
-
-        const { data: urlData } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(path);
-
-        return urlData.publicUrl;
-    };
-
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const userId = localStorage.getItem("userId");
-            
-            if (!userId) return;
-
-            try {
-                setUploadingAvatar(true);
-                const fileName = `${userId}_${Date.now()}_${file.name}`;
-                const filePath = `avatars/${fileName}`;
-                
-                const publicUrl = await uploadFileToSupabase(file, 'images', filePath);
-                
-                setUser({ ...user, avatar: publicUrl });
-                
-                alert("Profile picture updated successfully!");
-            } catch (error) {
-                console.error("Error uploading avatar:", error);
-                alert("Failed to upload profile picture. Please try again.");
-            } finally {
-                setUploadingAvatar(false);
-            }
-        }
-    };
-
-    
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setUser({ ...user, [e.target.name]: e.target.value });
     };
@@ -381,7 +334,7 @@ const ProfilePage: React.FC = () => {
             <main className="flex-1 max-w-4xl mx-auto p-8 bg-white rounded-xl shadow-lg my-10 border border-gray-200">
                 {/* Profile Header Section */}
                 <div className="flex flex-col justify-center  md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8 pb-6 border-b border-gray-200">
-                    <div className="relative w-32 h-32">
+                    {/* <div className="relative w-32 h-32">
                         <Image
                             height={128}
                             width={128}
@@ -390,26 +343,7 @@ const ProfilePage: React.FC = () => {
                             alt="User Avatar"
                             className="w-full h-full rounded-full border-4 border-blue-400 shadow-md object-cover"
                         />
-                        {editing && (
-                            <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 cursor-pointer shadow-lg hover:bg-blue-600 transition-colors"
-                                 onClick={() => fileInputRef.current?.click()}
-                            >
-                                {uploadingAvatar ? (
-                                    <FaSpinner className="animate-spin text-white text-lg" />
-                                ) : (
-                                    <FaCamera className="text-white text-lg" />
-                                )}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleAvatarUpload}
-                                    className="hidden"
-                                    ref={fileInputRef}
-                                    disabled={uploadingAvatar}
-                                />
-                            </div>
-                        )}
-                    </div>
+                    </div> */}
                     <div className="text-center md:text-left">
                         {editing ? (
                             <>

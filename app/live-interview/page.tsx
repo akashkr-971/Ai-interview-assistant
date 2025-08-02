@@ -211,7 +211,7 @@ export default function LiveInterviewPage() {
                 .eq("user_id", interviewer_id)
                 .single();
             if(interviewerdata){
-                const updatedWallet = (interviewerdata.wallet || 0) + interviewPrice;
+                const updatedWallet = (interviewerdata.wallet || 0) + interviewPrice - 50;
                 const { error: walletError } = await supabase
                     .from("interviewers")
                     .update({ wallet: updatedWallet })
@@ -225,8 +225,6 @@ export default function LiveInterviewPage() {
         }
     };
 
-    // ...existing code...
-    // Only show active bookings in main section
     const activeBookings = scheduledInterviews.filter(b => b.status === 'Scheduled' || b.status === 'Accepted');
 
     return (
@@ -262,7 +260,7 @@ export default function LiveInterviewPage() {
                                     <p className="text-sm text-gray-600 mb-1">Experience: {interviewer.experience_level}</p>
                                     <p className="text-sm text-gray-600 mb-1">Rating: {interviewer.rating ?? 0}</p>
                                     <p className="text-sm text-gray-600 mb-1">Language: {interviewer.preferred_language}</p>
-                                    <p className="text-sm text-gray-600 mb-1">Price: ₹{interviewer.price_per_session ?? 0}</p>
+                                    <p className="text-sm text-gray-600 mb-1">Price: ₹{interviewer.price_per_session !== null && interviewer.price_per_session !== undefined ? interviewer.price_per_session + 50 : 0}</p>
                                 </div>
                             ))}
                         </div>

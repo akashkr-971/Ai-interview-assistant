@@ -5,7 +5,22 @@ import { supabase } from '@/lib/supabaseClient';
 import Modal from '../components/modal';
 import InputField from '../components/InputField';
 import Button from '../components/button';
+import { toast } from 'react-hot-toast';
+import CompleteBookingModal from "../components/completeBooking";
+import { set } from "date-fns";
 // Interviewer-specific navbar
+
+type InterviewReportModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  report: {
+    score: number;
+    feedback: string;
+    strengths: string;
+    weaknesses: string;
+    created_at: string;
+  } | null;
+};
 
 // WithdrawForm component
 function WithdrawForm({ userId, walletAmount, onRequest }: { userId: string | null, walletAmount: number | null, onRequest?: () => void }) {
@@ -219,6 +234,13 @@ const InterviewerDashboard = () => {
   const [showEditModal, setShowEditModal] = useState(false); // For editing interviewer profile
   const [showBookingHistory, setShowBookingHistory] = useState(false);
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [currentMail, setCurrentMail] = useState('');
+  const [meetingLink, setMeetingLink] = useState('');
+  const [showMailModal, setShowMailModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<InterviewReportModalProps['report']>(null);
+  const [currentBookingId, setCurrentBookingId] = useState<number>(1);
   const [formData, setFormData] = useState({
     bio: '',
     experience_level: '',
@@ -301,9 +323,27 @@ const InterviewerDashboard = () => {
     }
   }, [userId, role, showModal, showEditModal]);
 
+  const sendmail = (mailid:string) => {
+    setCurrentMail(mailid);
+    setShowMailModal(true); // open modal
+  };
+
+  const completeinterview = (bookingId: number) => {
+    console.log("Complete interview for booking ID:", bookingId);
+    setCurrentBookingId(bookingId);
+    setShowCompleteModal(true);
+  };
+
+  const viewReport = async (bookingId: number) => {
+    const report = await fetch(`/api/interview-report?bookingId=${bookingId}`);
+    const data = await report.json();
+    setSelectedReport(data);
+    setIsReportOpen(true);
+    setShowBookingHistory(false);
+  };
+
+
   if (loading) return <div className="text-center mt-10">Loading...</div>;
-
-
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -416,6 +456,88 @@ const InterviewerDashboard = () => {
           </div>
         )}
 
+        {showMailModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white p-6 rounded-lg w-[90%] max-w-md shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">Enter Meeting Link</h2>
+              <input
+                type="text"
+                placeholder="https://meet.link/xyz"
+                className="w-full p-2 border rounded mb-4"
+                value={meetingLink}
+                onChange={(e) => setMeetingLink(e.target.value)}
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowMailModal(false);
+                    setMeetingLink('');
+                  }}
+                  className="px-4 py-2 bg-gray-300 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const res = await fetch('/api/interviewMail', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        email: currentMail,
+                        link: meetingLink,
+                      }),
+                    });
+
+                    const result = await res.json();
+
+                    if (result.success) {
+                      toast.success('Mail sent successfully ✉️');
+                      setShowMailModal(false);
+                      setMeetingLink('');
+                    } else {
+                      toast.error('Failed to send mail ❌');
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showCompleteModal  && (
+          <CompleteBookingModal
+            show={showCompleteModal}
+            onClose={() => setShowCompleteModal(false)}
+            interviewId={currentBookingId}
+          />
+        )}
+
+        {isReportOpen && (
+          <Modal
+            title="Interview Report"
+            onClose={() => {
+              setIsReportOpen(false);
+              setSelectedReport(null);
+              setShowBookingHistory(true);
+            }}
+          >
+            {selectedReport ? (
+              <div className="space-y-4">
+                <p><strong>Score:</strong> {selectedReport.score}</p>
+                <p><strong>Feedback:</strong> {selectedReport.feedback}</p>
+                <p><strong>Strengths:</strong> {selectedReport.strengths}</p>
+                <p><strong>Weaknesses:</strong> {selectedReport.weaknesses}</p>
+                <p><strong>Date:</strong> {new Date(selectedReport.created_at).toLocaleDateString()}</p>
+              </div>
+            ) : (
+              <p>No report available for this booking.</p>
+            )}
+          </Modal>
+        )}
+
         {!showModal && interviewerData && (
           <div className="max-w-4xl mx-auto">
             <div className="mb-6">
@@ -507,18 +629,30 @@ const InterviewerDashboard = () => {
                         <p className="font-semibold">User: {booking.users?.name ?? '-'} ({booking.users?.email ?? '-'})</p>
                         <p>Date: {booking.date}</p>
                         <p>Time: {booking.time}</p>
+                        <p>Price: {booking.price - 50}</p>
                         <p>Status: <span className={booking.status === 'Accepted' ? 'text-green-600' : booking.status === 'Cancelled' ? 'text-red-600' : 'text-yellow-600'}>{booking.status}</span></p>
                         {booking.status !== 'Scheduled' && (
                           <p className="text-xs text-gray-500">Last updated: {new Date(booking.updated_at ?? booking.created_at).toLocaleString()}</p>
                         )}
                       </div>
                       <div className="flex gap-2 mt-2 md:mt-0">
-                        {booking.status === 'Scheduled' && (
+                        {booking.status === 'Scheduled' ? (
                           <>
                             <Button text="Accept" onClick={() => handleAcceptBooking(booking.id)} />
                             <Button text="Cancel" onClick={() => handleCancelBooking(booking.id)} />
                           </>
-                        )}
+                        ) : booking.status === 'Accepted' ? (
+                          <>
+                            <Button text="Start Interview" onClick={() => sendmail(booking.users?.email)} />
+                            <button
+                              onClick={() => completeinterview(booking.id)}
+                              className="px-4 py-2 bg-green-600 text-white rounded"
+                            >
+                              Complete Booking
+                            </button>
+                          </>
+                        ) : null}
+
                       </div>
                     </div>
                   ))}
@@ -543,6 +677,15 @@ const InterviewerDashboard = () => {
                             <p>Status: <span className={booking.status === 'Accepted' ? 'text-green-600' : booking.status === 'Cancelled' ? 'text-red-600' : 'text-yellow-600'}>{booking.status}</span></p>
                             {booking.status !== 'Scheduled' && (
                               <p className="text-xs text-gray-500">Last updated: {new Date(booking.updated_at ?? booking.created_at).toLocaleString()}</p>
+                            )}
+                            <p>Price: {booking.price - 50}</p>
+                            
+                            {booking.status === 'Completed' && (
+                                <button
+                                  onClick={() => viewReport(booking.id)} 
+                                  className="bg-blue-500 text-white p-2 rounded mt-2 hover:bg-blue-600 transition">
+                                  View Report
+                                </button>
                             )}
                           </div>
                         </div>
