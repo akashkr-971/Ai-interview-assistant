@@ -731,6 +731,15 @@ const InterviewerDashboard = () => {
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
+              <div className="bg-white p-4 rounded-lg shadow-sm col-span-2">
+                <p className="text-sm text-gray-500">Verification</p>
+                <p className="text-xl font-semibold">
+                  {interviewerData.is_verified 
+                    ? 'You have been Verified 👍' 
+                    : 'Your request is in review and will be verified soon. Please wait patiently 🚀'}
+                </p>
+
+              </div>
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 <p className="text-sm text-gray-500">Experience</p>
                 <p className="text-xl font-semibold">{interviewerData.experience_level} yrs</p>
