@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Mail, Loader2 } from "lucide-react";
+import { CheckCircle, Mail, Loader2, Verified } from "lucide-react";
 
 export default function VerifyEmailPage() {
   const [isVerified, setIsVerified] = useState(false);
@@ -30,7 +30,8 @@ export default function VerifyEmailPage() {
         clearInterval(interval);
         localStorage.removeItem("email");
         router.push(role === "interviewer" ? "/interviewer" : "/");
-      }
+        console.log(isVerified ? "Email verified successfully." : "Email not verified yet.");
+    }
     }, 4000);
 
     return () => clearInterval(interval);
@@ -83,7 +84,7 @@ export default function VerifyEmailPage() {
         </p>
 
         <div className="text-sm text-gray-500 mb-4">
-          Didn’t receive the email? Try checking your spam folder, or:
+          Didn&apos;t receive the email? Try checking your spam folder, or:
         </div>
 
         <button
