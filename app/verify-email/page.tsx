@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Mail, Loader2, Verified } from "lucide-react";
+import { CheckCircle, Mail, Loader2 } from "lucide-react";
 
 export default function VerifyEmailPage() {
   const [isVerified, setIsVerified] = useState(false);
@@ -79,7 +79,7 @@ export default function VerifyEmailPage() {
           Verification Email Sent
         </h1>
         <p className="text-gray-600 text-sm mb-6">
-          We've sent a verification link to your email. Please check your inbox
+          We&apos;ve sent a verification link to your email. Please check your inbox
           and click the link to verify your account.
         </p>
 
