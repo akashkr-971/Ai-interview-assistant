@@ -1,4 +1,3 @@
-// ...existing code...
 import Image from 'next/image'
 
 const Hero = () => {

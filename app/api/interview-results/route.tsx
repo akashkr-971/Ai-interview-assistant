@@ -5,7 +5,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {interviewId, score, feedback, strengths, weaknesses } = body;
 
-    const { data, error } = await supabase.from('interview_results').insert([
+    const { error } = await supabase.from('interview_results').insert([
       {
         booking_id: interviewId,
         score,

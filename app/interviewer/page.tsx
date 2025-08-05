@@ -7,8 +7,6 @@ import InputField from '../components/InputField';
 import Button from '../components/button';
 import { toast } from 'react-hot-toast';
 import CompleteBookingModal from "../components/completeBooking";
-import { set } from "date-fns";
-// Interviewer-specific navbar
 
 type InterviewReportModalProps = {
   isOpen: boolean;
@@ -138,67 +136,189 @@ const InterviewerDashboard = () => {
 
   // For new interviewer creation
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log("Form data:", formData);
     e.preventDefault();
+
+    if (!userId) {
+      alert("User ID not found");
+      return;
+    }
+
+    // Check if resume file is selected
+    if (!formData.resume) {
+      alert("Please select a resume file");
+      return;
+    }
+
     const specializationArray = formData.specialization
       .split(',')
       .map(item => item.trim())
       .filter(Boolean);
-    const { error } = await supabase.from('interviewers').insert([
-      {
-        user_id: userId,
-        bio: formData.bio,
-        experience_level: formData.experience_level,
-        specialization: specializationArray,
-        preferred_language: formData.preferred_language,
-        price_per_session: formData.price_per_session,
-        rating: 0,
-        interview_count: 0,
-        is_available: true,
-        is_verified: false
+
+    const resumeFile = formData.resume; // resume from input (File object)
+    let resumeUrl = '';
+    
+    console.log("Starting resume upload...");
+    console.log("Resume file:", resumeFile);
+    
+    try {
+      const fileExt = resumeFile.name.split('.').pop();
+      const fileName = `${userId}_${Date.now()}.${fileExt}`;
+      const filePath = `resumes/${fileName}`;
+      console.log("File path for upload:", filePath);
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('resumes')
+        .upload(filePath, resumeFile, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: resumeFile.type
+        });
+
+      if (uploadError) {
+        console.error("Resume upload error:", uploadError);
+        alert('Resume upload failed: ' + uploadError.message);
+        return;
       }
-    ]);
-    if (!error) {
-      setShowModal(false);
-      setInterviewerData({
-        ...formData,
-        specialization: specializationArray,
-        rating: 0,
-        interview_count: 0,
-        is_available: true,
-        is_verified: false
-      });
-    } else {
-      alert("Failed to save interviewer info: " + error.message);
+
+      console.log("Resume uploaded successfully:", uploadData);
+
+      const { data: publicURLData } = supabase
+        .storage
+        .from('resumes')
+        .getPublicUrl(filePath);
+
+      resumeUrl = publicURLData?.publicUrl || '';
+      console.log("Public URL of uploaded resume:", resumeUrl);
+
+      // === Step 3: Insert Interviewer Data ===
+      const { error } = await supabase.from('interviewers').insert([
+        {
+          user_id: userId,
+          bio: formData.bio,
+          experience_level: formData.experience_level,
+          specialization: specializationArray,
+          preferred_language: formData.preferred_language,
+          price_per_session: formData.price_per_session,
+          rating: 0,
+          interview_count: 0,
+          is_available: true,
+          is_verified: false,
+          resume_url: resumeUrl 
+        }
+      ]);
+
+      if (!error) {
+        console.log("Interviewer data saved successfully");
+        setShowModal(false);
+        setInterviewerData({
+          ...formData,
+          specialization: specializationArray,
+          rating: 0,
+          interview_count: 0,
+          is_available: true,
+          is_verified: false,
+          resume_url: resumeUrl
+        });
+        // Reset form
+        setFormData({
+          bio: '',
+          experience_level: '',
+          specialization: '',
+          preferred_language: '',
+          price_per_session: '',
+          resume: null
+        });
+      } else {
+        console.error("Database error:", error);
+        alert("Failed to save interviewer info: " + error.message);
+      }
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      alert("An unexpected error occurred during resume upload");
     }
   };
 
-  // For updating interviewer profile
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Updating interviewer profile with data:", formData);
+
     const specializationArray = formData.specialization
       .split(',')
       .map(item => item.trim())
       .filter(Boolean);
-    const { error } = await supabase
-      .from('interviewers')
-      .update({
-        bio: formData.bio,
-        experience_level: formData.experience_level,
-        specialization: specializationArray,
-        preferred_language: formData.preferred_language,
-        price_per_session: formData.price_per_session
-      })
-      .eq('user_id', userId);
-    if (!error) {
-      setShowEditModal(false);
-      setInterviewerData({
-        ...interviewerData,
-        ...formData,
-        specialization: specializationArray
-      });
-      alert("Profile updated successfully!");
-    } else {
-      alert("Failed to update profile: " + error.message);
+
+    let resumeUrl = interviewerData?.resume_url; // fallback to existing if not updated
+
+    // If resume file is selected, upload it to Supabase storage
+    if (formData.resume) {
+      console.log("Uploading new resume file...");
+      
+      try {
+        const fileExt = formData.resume.name.split('.').pop();
+        const fileName = `${userId}_resume_${Date.now()}.${fileExt}`;
+        const filePath = `resumes/${fileName}`;
+        console.log("File path for upload:", filePath);
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('resumes') 
+          .upload(filePath, formData.resume, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: formData.resume.type
+          });
+
+        if (uploadError) {
+          console.error("Resume upload error:", uploadError);
+          alert("Resume upload failed: " + uploadError.message);
+          return;
+        }
+        
+        console.log("Resume uploaded successfully:", uploadData);
+
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('resumes')
+          .getPublicUrl(filePath);
+        resumeUrl = publicUrlData.publicUrl;
+        console.log("Public URL of uploaded resume:", resumeUrl);
+      } catch (error) {
+        console.error("Unexpected error during resume upload:", error);
+        alert("An unexpected error occurred during resume upload");
+        return;
+      }
+    }
+
+    try {
+      const { error } = await supabase
+        .from('interviewers')
+        .update({
+          bio: formData.bio,
+          experience_level: formData.experience_level,
+          specialization: specializationArray,
+          preferred_language: formData.preferred_language,
+          price_per_session: formData.price_per_session,
+          resume_url: resumeUrl
+        })
+        .eq('user_id', userId);
+
+      if (!error) {
+        console.log("Profile updated successfully");
+        setShowEditModal(false);
+        setInterviewerData({
+          ...interviewerData,
+          ...formData,
+          specialization: specializationArray,
+          resume_url: resumeUrl
+        });
+        alert("Profile updated successfully!");
+      } else {
+        console.error("Database update error:", error);
+        alert("Failed to update profile: " + error.message);
+      }
+    } catch (error) {
+      console.error("Unexpected error during profile update:", error);
+      alert("An unexpected error occurred during profile update");
     }
   };
 
@@ -227,6 +347,7 @@ const InterviewerDashboard = () => {
       alert('Failed to cancel booking: ' + error.message);
     }
   };
+
   const [interviewerData, setInterviewerData] = useState<any>(null);
   const [walletAmount, setWalletAmount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -241,17 +362,18 @@ const InterviewerDashboard = () => {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<InterviewReportModalProps['report']>(null);
   const [currentBookingId, setCurrentBookingId] = useState<number>(1);
+  
   const [formData, setFormData] = useState({
     bio: '',
     experience_level: '',
     specialization: '',
     preferred_language: '',
-    price_per_session: ''
+    price_per_session: '',
+    resume: null as File | null
   });
   const [bookings, setBookings] = useState<any[]>([]);
   const [paymentRequests, setPaymentRequests] = useState<any[]>([]);
 
-  
   // Add userId and role state at the top level of the component
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -283,7 +405,8 @@ const InterviewerDashboard = () => {
             experience_level: data.experience_level ?? '',
             specialization: Array.isArray(data.specialization) ? data.specialization.join(', ') : (data.specialization ?? ''),
             preferred_language: data.preferred_language ?? '',
-            price_per_session: data.price_per_session ?? ''
+            price_per_session: data.price_per_session ?? '',
+            resume: null 
           });
         }
       } else {
@@ -342,7 +465,6 @@ const InterviewerDashboard = () => {
     setShowBookingHistory(false);
   };
 
-
   if (loading) return <div className="text-center mt-10">Loading...</div>;
 
   return (
@@ -399,6 +521,37 @@ const InterviewerDashboard = () => {
                   placeholder="e.g. 500"
                   type="number"
                 />
+                <div className="flex flex-col space-y-2">
+                  <label htmlFor="resume" className="text-sm font-medium text-gray-700">
+                    Upload Resume (PDF) *
+                  </label>
+
+                  <input
+                    id="resume"
+                    name="resume"
+                    type="file"
+                    accept=".pdf"
+                    required
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      console.log("Resume file selected:", file);
+                      setFormData(prev => ({ ...prev, resume: file }));
+                    }}
+                    className="sr-only"
+                  />
+
+                  <label
+                    htmlFor="resume"
+                    className="cursor-pointer bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 transition-colors"
+                  >
+                    Choose File
+                  </label>
+
+                  {formData.resume && (
+                    <span className="text-xs text-green-600">Selected: {formData.resume.name}</span>
+                  )}
+                </div>
+
                 <Button text="Save Details" onClick={() => {}} />
               </form>
             </Modal>
@@ -450,6 +603,38 @@ const InterviewerDashboard = () => {
                   placeholder="e.g. 500"
                   type="number"
                 />
+                <div className="flex flex-col space-y-2">
+                  <label htmlFor="editResume" className="text-sm font-medium text-gray-700">
+                    Upload Resume (PDF) - Optional
+                  </label>
+
+                  <input
+                    id="editResume"
+                    name="resume"
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      console.log("Edit resume file selected:", file);
+                      setFormData(prev => ({ ...prev, resume: file }));
+                    }}
+                    className="sr-only"
+                  />
+
+                  <label
+                    htmlFor="editResume"
+                    className="cursor-pointer bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 transition-colors"
+                  >
+                    Choose File
+                  </label>
+
+                  {formData.resume && (
+                    <span className="text-xs text-green-600">Selected: {formData.resume.name}</span>
+                  )}
+                  {interviewerData?.resume_url && !formData.resume && (
+                    <span className="text-xs text-blue-600">Current resume uploaded</span>
+                  )}
+                </div>
                 <Button text="Update Details" onClick={() => {}} />
               </form>
             </Modal>
@@ -457,13 +642,13 @@ const InterviewerDashboard = () => {
         )}
 
         {showMailModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white p-6 rounded-lg w-[90%] max-w-md shadow-lg">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xl">
+            <div className="bg-white p-6 rounded-lg w-[90%] max-w-md shadow-lg border border-gray-300">
               <h2 className="text-xl font-semibold mb-4">Enter Meeting Link</h2>
               <input
                 type="text"
                 placeholder="https://meet.link/xyz"
-                className="w-full p-2 border rounded mb-4"
+                className="w-full p-2 border border-gray-300 font-semibold rounded mb-4"
                 value={meetingLink}
                 onChange={(e) => setMeetingLink(e.target.value)}
               />
@@ -571,9 +756,24 @@ const InterviewerDashboard = () => {
                 <p className="text-md">₹{interviewerData.price_per_session}</p>
               </div>
               {/* Wallet display */}
-              <div className="bg-white p-4 rounded-lg shadow-sm col-span-2">
+              <div className="bg-white p-4 rounded-lg shadow-sm">
                 <p className="text-sm text-gray-500">Wallet Amount</p>
                 <p className="text-xl font-semibold text-yellow-700">₹{walletAmount ?? 0}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <p className="text-sm text-gray-500">Resume</p>
+                {interviewerData.resume_url ? (
+                  <a
+                    href={interviewerData.resume_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xl text-yellow-700 underline hover:text-yellow-800"
+                  >
+                    View Resume
+                  </a>
+                ) : (
+                  <p className="text-sm text-gray-400">No resume uploaded</p>
+                )}
               </div>
             </div>
 
@@ -627,6 +827,7 @@ const InterviewerDashboard = () => {
                     <div key={booking.id} className="border p-4 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-2">
                       <div>
                         <p className="font-semibold">User: {booking.users?.name ?? '-'} ({booking.users?.email ?? '-'})</p>
+                        <p>Interviewee Name: {booking.name}</p>
                         <p>Date: {booking.date}</p>
                         <p>Time: {booking.time}</p>
                         <p>Price: {booking.price - 50}</p>

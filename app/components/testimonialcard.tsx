@@ -3,6 +3,7 @@ import { User, Quote, X } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 
 interface TestimonialCardProps {
   item: {
@@ -126,7 +127,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({ item, className }) =>
               <div className="relative flex-shrink-0">
                 <div className="p-1 bg-gradient-to-tr from-purple-500 to-blue-500 rounded-full shadow-lg">
                   {item.user_id?.avatar ? (
-                    <img
+                    <Image
                       src={item.user_id.avatar}
                       alt={item.user_id.name || "User"}
                       className="w-12 h-12 rounded-full border-2 border-white object-cover"
@@ -210,7 +211,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({ item, className }) =>
         <div className="flex items-start gap-5 mb-6 relative z-10">
           <div className="relative p-1 bg-gradient-to-tr from-purple-500 to-blue-500 rounded-full shadow-lg">
             {item.user_id?.avatar ? (
-              <img
+              <Image
                 src={item.user_id.avatar}
                 alt={item.user_id.name || "User"}
                 className="w-12 h-12 rounded-full border-2 border-white object-cover"

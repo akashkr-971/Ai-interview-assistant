@@ -43,7 +43,7 @@ const PaymentDetail = () => {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">RazorPay Payment ID</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">User Name</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Quantity</th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">status</th>
+                <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Status</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Payment Method</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Amount</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Purchased At</th>
@@ -51,30 +51,42 @@ const PaymentDetail = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {payments && payments.length > 0 ? (
-                payments.map((payment: any) => (
-                  <tr key={payment.id} className="hover:bg-gray-50 transition duration-150 ease-in-out">
+                payments.map((payment: any, index: number) => (
+                  <tr key={payment.payment_id || `payment-${index}`} className="hover:bg-gray-50 transition duration-150 ease-in-out">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{payment.razorpay_payment_id || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{payment.users?.name || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{payment.quantity}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{payment.status}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{payment.payment_method}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
-                      ₹{payment.amount?.toLocaleString('en-IN') || '0.00'} {/* Format as Indian Rupee */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{payment.quantity || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        payment.status === 'completed' || payment.status === 'success' 
+                          ? 'bg-green-100 text-green-800' 
+                          : payment.status === 'pending' 
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : payment.status === 'failed'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {payment.status || 'Unknown'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700 capitalize">{payment.payment_method || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700 font-semibold">
+                      ₹{payment.amount?.toLocaleString('en-IN') || '0.00'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">
-                      {new Date(payment.created_at).toLocaleString('en-IN', {
+                      {payment.created_at ? new Date(payment.created_at).toLocaleString('en-IN', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit',
-                      })}
+                      }) : 'N/A'}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-6 text-center text-gray-500 text-md">
+                  <td colSpan={7} className="px-6 py-6 text-center text-gray-500 text-md">
                     No payments found.
                   </td>
                 </tr>

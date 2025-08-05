@@ -34,6 +34,7 @@ type Booking = {
     email?: string;
     interviewer_email?: string;
     interviewer_name?: string;
+    rating?: number | null;
 };
 
 type InterviewReportModalProps = {
@@ -55,7 +56,11 @@ export default function LiveInterviewPage() {
     const [scheduledInterviews, setScheduledInterviews] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(false);
     const [isReportOpen, setIsReportOpen] = useState(false);
-      const [selectedReport, setSelectedReport] = useState<InterviewReportModalProps['report']>(null);
+    const [selectedReport, setSelectedReport] = useState<InterviewReportModalProps['report']>(null);
+    const [showRatingModal, setShowRatingModal] = useState(false);
+    const [selectedInterviewId, setSelectedInterviewId] = useState<number | null>(null);
+    const [rating, setRating] = useState(0);
+    const [hoveredRating, setHoveredRating] = useState(0);
 
     useEffect(() => {
         const fetchInterviewers = async () => {
@@ -247,6 +252,61 @@ export default function LiveInterviewPage() {
         setIsReportOpen(true);
     };
 
+    const handleSubmitRating = async () => {
+        if (rating === 0) {
+            alert('Please select a rating');
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+            .from('bookings')
+            .update({ rating: rating })
+            .eq('id', selectedInterviewId);
+
+            if (error) throw error;
+
+            const { data: interviewerId, error: fetchIdError } = await supabase
+                .from('bookings')
+                .select('interviewer_id')
+                .eq('id', selectedInterviewId)
+                .single();
+            if (fetchIdError) throw fetchIdError;
+            if(interviewerId){
+                const interviewersId = interviewerId.interviewer_id; 
+                 const { data: interviewerData, error: fetchError } = await supabase
+                    .from('interviewers')
+                    .select('*')
+                    .eq('user_id', interviewersId)
+                    .single();
+
+                if (fetchError) throw fetchError;
+                const newRating = (interviewerData.rating || 0) + rating;
+                const interview_count = (interviewerData.interview_count || 0) + 1;
+                const { error: updateError } = await supabase
+                    .from('interviewers')
+                    .update({ rating: newRating , interview_count: interview_count})
+                    .eq('user_id', interviewersId);
+
+                if (updateError) throw updateError;
+            }
+            // Update your local state
+            setInterviewers(prev => prev.map(interview => 
+            interview.id === selectedInterviewId 
+                ? { ...interview, rating: rating }
+                : interview
+            ));
+
+            setShowRatingModal(false);
+            setRating(0);
+            setSelectedInterviewId(null);
+            window.location.reload();
+            
+        } catch (error: any) {
+            alert('Failed to submit rating: ' + error.message);
+        }
+        };
+
     const activeBookings = scheduledInterviews.filter(b => b.status === 'Scheduled' || b.status === 'Accepted');
 
     return (
@@ -297,7 +357,7 @@ export default function LiveInterviewPage() {
                             }}
                         >
                             {selectedReport ? (
-                            <div className="space-y-4">
+                            <div className="space-y-4 ">
                                 <p><strong>Score:</strong> {selectedReport.score}</p>
                                 <p><strong>Feedback:</strong> {selectedReport.feedback}</p>
                                 <p><strong>Strengths:</strong> {selectedReport.strengths}</p>
@@ -465,16 +525,83 @@ export default function LiveInterviewPage() {
                                     <p className="text-sm text-gray-600 mb-1">Time: {interview.time}</p>
                                     <p className={`text-sm font-medium ${interview.status === 'Accepted' ? 'text-green-600' : interview.status === 'Cancelled' ? 'text-red-600' : 'text-yellow-600'}`}>Status: {interview.status}</p>
                                     {interview.status === "Completed" && (
+                                    <>
+                                        {interview.rating !== null ? (
                                         <button
                                             onClick={() => viewReport(interview.id)} 
                                             className="bg-blue-500 text-white p-2 rounded mt-2 hover:bg-blue-600 transition">
                                             View Report
                                         </button>
+                                        ) : (
+                                        <button
+                                            onClick={() => {
+                                                setSelectedInterviewId(interview.id);
+                                                setShowRatingModal(true);
+                                            }}
+                                            className="bg-green-500 text-white p-2 rounded mt-2 hover:bg-green-600 transition">
+                                            Add Rating
+                                        </button>
+                                        )}
+                                    </>
                                     )}
                                 </div>
                             ))}
                         </div>
                     )}
+                    {showRatingModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur bg-opacity-50">
+                            <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+                            <h3 className="text-lg font-bold mb-4">Rate this Interview</h3>
+                            
+                            {/* Star Rating */}
+                            <div className="flex justify-center space-x-1 mb-4">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    onClick={() => setRating(star)}
+                                    onMouseEnter={() => setHoveredRating(star)}
+                                    onMouseLeave={() => setHoveredRating(0)}
+                                    className="text-3xl focus:outline-none"
+                                >
+                                    <span className={star <= (hoveredRating || rating) ? 'text-yellow-400' : 'text-gray-300'}>
+                                    ★
+                                    </span>
+                                </button>
+                                ))}
+                            </div>
+                            
+                            <div className="text-center text-sm text-gray-500 mb-4">
+                                {rating === 0 && 'Click to rate'}
+                                {rating === 1 && 'Poor'}
+                                {rating === 2 && 'Fair'} 
+                                {rating === 3 && 'Good'}
+                                {rating === 4 && 'Very Good'}
+                                {rating === 5 && 'Excellent'}
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex space-x-3">
+                                <button
+                                onClick={() => {
+                                    setShowRatingModal(false);
+                                    setRating(0);
+                                    setHoveredRating(0);
+                                }}
+                                className="flex-1 px-4 py-2 bg-gray-300 rounded"
+                                >
+                                Cancel
+                                </button>
+                                <button
+                                onClick={handleSubmitRating}
+                                disabled={rating === 0}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+                                >
+                                Submit
+                                </button>
+                            </div>
+                            </div>
+                        </div>
+                        )}
                 </section>
             </main>
             <Footer />

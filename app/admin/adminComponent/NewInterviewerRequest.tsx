@@ -9,7 +9,7 @@ const fetchInterviewers = async () => {
     .select(`
       *,
       users (
-        id, name, email, coins, status, created_at
+        id, name, email, created_at
       )
     `)
     .eq('is_verified', false); 
@@ -26,8 +26,6 @@ const InterviewerDetail = () => {
   const { data: interviewers, error, isLoading } = useSWR('unverified-interviewers', fetchInterviewers);
 
   const handleVerifyInterviewer = async (interviewerId: string) => {
-    
-    
     mutate('unverified-interviewers', (currentInterviewers: any) => {
       if (!currentInterviewers) return [];
       return currentInterviewers.filter((interviewer: any) => interviewer.id !== interviewerId);
@@ -68,11 +66,11 @@ const InterviewerDetail = () => {
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Name</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Email</th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Coins</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Experience</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Specialization</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Rating</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Price</th>
+                <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Resume</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Availability</th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider">Action</th>
               </tr>
@@ -84,11 +82,24 @@ const InterviewerDetail = () => {
                   <tr key={entry.id} className="hover:bg-gray-50 transition duration-150 ease-in-out">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline cursor-pointer">{user?.email || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{user?.coins || 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{entry.experience_level || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{(entry.specialization || []).join(', ') || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">{entry.rating?.toFixed(1) || '0.0'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-700">₹{entry.price_per_session || '—'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      {entry.resume_url ? (
+                        <a
+                          href={entry.resume_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline text-sm font-medium"
+                        >
+                          View Resume
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 text-sm">No Resume</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span
                         className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${

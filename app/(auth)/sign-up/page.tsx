@@ -60,17 +60,11 @@ const SignIn = () => {
       }
 
       localStorage.setItem("userId", data.user.id);
-      localStorage.setItem("role", data.user.role||'user');
+      localStorage.setItem("role", formData.role||'user');
+      localStorage.setItem("email", formData.email);
       console.log("User signed up successfully:", data.user.id);
       console.log("User role:", data.user.role);
-      if(data.user.role === 'admin'){
-        window.location.href = "/admin";
-      }else if(data.user.role === 'interviewer'){
-        window.location.href = "/interviewer";
-      }else{
-        window.location.href = "/";
-      }
-
+      window.location.href = "/verify-email";
     }
   };
 

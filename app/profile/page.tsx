@@ -129,8 +129,6 @@ const ProfilePage: React.FC = () => {
     const [originalUser, setOriginalUser] = useState<UserData>(defaultUserData);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [uploadingAvatar, setUploadingAvatar] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     // Aptitude test score state
     const [aptitudeScores, setAptitudeScores] = useState<number[]>([]);
     const [averageAptitudeScore, setAverageAptitudeScore] = useState<number | null>(null);
