@@ -38,6 +38,7 @@ const LogIn = () => {
         if (userId) {
           localStorage.setItem("userId", userId);
           localStorage.setItem("role", role);
+          localStorage.setItem("email", formData.email);
           console.log('The role is : ',role);
           if(role == "admin"){
             window.location.href = "/admin";

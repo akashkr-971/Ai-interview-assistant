@@ -144,6 +144,7 @@ const InterviewCard: React.FC = () => {
                     'Ruby': '/Technology-cover/ruby.svg',
                     'PHP': '/Technology-cover/php.svg',
                     'Django': '/Technology-cover/django.svg',
+                    'Spring Boot': '/Technology-cover/springboot.svg',
                   };
                   
                   const iconPath = techIcons[tech] || '/Technology-cover/default.svg';

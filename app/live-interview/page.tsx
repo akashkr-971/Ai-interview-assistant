@@ -5,6 +5,8 @@ import { supabase } from "../../lib/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import Modal from '../components/modal';
+import toast from "react-hot-toast";
+import  {useRouter}  from 'next/navigation';
 
 type Interviewer = {
     id: number;
@@ -61,6 +63,17 @@ export default function LiveInterviewPage() {
     const [selectedInterviewId, setSelectedInterviewId] = useState<number | null>(null);
     const [rating, setRating] = useState(0);
     const [hoveredRating, setHoveredRating] = useState(0);
+    const [complaint, setComplaint] = useState(false);
+    const [complaintInterviewId, setComplaintInterviewId] = useState<number | null>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("report") === "submitted") {
+            toast.success("Reported successfully!");
+            router.replace('/live-interview');
+        }
+    }, []);
 
     useEffect(() => {
         const fetchInterviewers = async () => {
@@ -252,6 +265,11 @@ export default function LiveInterviewPage() {
         setIsReportOpen(true);
     };
 
+    const RegisterComplaint = async (bookingId: number) => {
+        setComplaint(true);
+        setComplaintInterviewId(bookingId);
+    };
+
     const handleSubmitRating = async () => {
         if (rating === 0) {
             alert('Please select a rating');
@@ -370,6 +388,47 @@ export default function LiveInterviewPage() {
                         </Modal>
                         )}
 
+                    {complaint && (
+                        <Modal
+                            title="Complaint"
+                            onClose={() => setComplaint(false)}
+                        >
+                            <div className="mt-4 p-2  text-red-500 rounded">
+                                <div>
+                                    <form action="/api/report" method="post">
+                                        <p>Enter the complaint details:</p>
+                                        <input type="hidden" name="id" value={localStorage.getItem('userId')||""}/>
+                                        <input type="hidden" name="source" value="live-interview"/>
+                                        <input type="hidden" name="interview_id" value={complaintInterviewId || ""}/>
+                                        <textarea
+                                            className="border mt-2 border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                            rows={4}
+                                            name="report"
+                                        />
+                                        <div className="flex justify-around">
+                                            <button
+                                                type="button"
+                                                className="mt-2 relative right-3 text-white-500 bg-red-100 p-2 rounded hover:underline"
+                                                onClick={() => {
+                                                    setComplaint(false);
+                                                }}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="mt-2 relative right-3 text-blue-500 bg-blue-100 p-2 rounded hover:underline"
+                                            >
+                                                Submit Complaint
+                                            </button>
+                                            
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </Modal>
+                    )}
+
                     {selectedInterviewer && (
                         <div className="mt-10 bg-white p-6 rounded-xl shadow-md border border-gray-200">
                             <h4 className="text-lg font-semibold mb-4 text-blue-700">Schedule Interview with {selectedInterviewer.name}</h4>
@@ -385,6 +444,7 @@ export default function LiveInterviewPage() {
                                     name="email"
                                     type="email"
                                     placeholder="Your Email"
+                                    defaultValue={localStorage.getItem("email") || ""}
                                     className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
                                     required
                                 />
@@ -527,11 +587,18 @@ export default function LiveInterviewPage() {
                                     {interview.status === "Completed" && (
                                     <>
                                         {interview.rating !== null ? (
-                                        <button
-                                            onClick={() => viewReport(interview.id)} 
-                                            className="bg-blue-500 text-white p-2 rounded mt-2 hover:bg-blue-600 transition">
-                                            View Report
-                                        </button>
+                                            <>
+                                                <button
+                                                    onClick={() => viewReport(interview.id)} 
+                                                    className="bg-blue-500 text-white p-2 rounded mt-2 hover:bg-blue-600 transition">
+                                                    View Report
+                                                </button>
+                                                <button
+                                                    onClick={() => RegisterComplaint(interview.id)} 
+                                                    className="bg-blue-500 ml-2 text-white p-2 rounded mt-2 hover:bg-blue-600 transition">
+                                                    Register a Complaint
+                                                </button>
+                                            </>
                                         ) : (
                                         <button
                                             onClick={() => {
