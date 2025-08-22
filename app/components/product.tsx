@@ -81,7 +81,7 @@ export default function ProductModal({ onClose }: { onClose: () => void }) {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? '',
       amount: order.amount,
       currency: 'INR',
-      name: 'PrepWise',
+      name: 'RolePrep',
       description: `${selectedProduct.label} Purchase`,
       order_id: order.id,
       handler: async (response: RazorpayResponse) => {
